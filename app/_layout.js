@@ -23,6 +23,24 @@ const Layout = () => {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="signUp/index"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="verifyOtp/index"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="congratsScreen/index.js"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 };

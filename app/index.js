@@ -84,6 +84,7 @@ const WelcomeScreen = () => {
               styles.signUpBtn,
               pressed && styles.signUpBtnPressed,
             ]}
+            onPress={() => router.push("signUp")}
           >
             <MaterialCommunityIcons
               name="email-variant"

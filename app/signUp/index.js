@@ -4,11 +4,11 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  Pressable,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   TouchableOpacity,
+  Pressable,
 } from "react-native";
 import { theme } from "../../constants/theme";
 import { hp, wp } from "../../helpers/common";
@@ -20,20 +20,24 @@ import Animated, {
   FadeInRight,
   FadeInUp,
 } from "react-native-reanimated";
-import { router } from "expo-router";
+import { useRouter } from "expo-router";
 
-const SignIn = () => {
+const SignUp = () => {
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const router = useRouter();
 
   const handleSubmit = () => {
+    console.log("Full Name:", fullName);
     console.log("Email:", email);
     console.log("Password:", password);
-  };
-
-  const handleForgotPassword = () => {
-    console.log("Forgot password");
+    console.log("Confirm Password:", confirmPassword);
+    router.push("verifyOtp");
   };
 
   return (
@@ -52,11 +56,33 @@ const SignIn = () => {
             entering={FadeInLeft.duration(900)}
             style={styles.header}
           >
-            Sign in
+            Sign up
           </Animated.Text>
           <View style={styles.inputGroup}>
             <Animated.View
               entering={FadeInLeft.duration(1000)}
+              style={styles.inputWrapper}
+            >
+              <TextInput
+                style={styles.input}
+                value={fullName}
+                onChangeText={setFullName}
+                autoCorrect={false}
+                required
+                placeholder="Full Name..."
+                placeholderTextColor={theme.colors.grey_deep_2}
+              />
+              <MaterialCommunityIcons
+                name="account"
+                size={24}
+                color={theme.colors.grey_deep_2}
+                style={styles.icon}
+              />
+            </Animated.View>
+          </View>
+          <View style={styles.inputGroup}>
+            <Animated.View
+              entering={FadeInLeft.duration(1100)}
               style={styles.inputWrapper}
             >
               <TextInput
@@ -80,7 +106,7 @@ const SignIn = () => {
           </View>
           <View style={styles.inputGroup}>
             <Animated.View
-              entering={FadeInLeft.duration(1100)}
+              entering={FadeInLeft.duration(1200)}
               style={styles.inputWrapper}
             >
               <TextInput
@@ -100,40 +126,52 @@ const SignIn = () => {
                 style={styles.icon}
               />
             </Animated.View>
-            <TouchableOpacity
-              onPress={handleForgotPassword}
-              style={styles.forgotPassword}
+          </View>
+          <View style={styles.inputGroup}>
+            <Animated.View
+              entering={FadeInLeft.duration(1300)}
+              style={styles.inputWrapper}
             >
-              <Animated.Text
-                entering={FadeInRight.duration(1100)}
-                style={styles.forgotPasswordText}
-              >
-                Forgot Password?
-              </Animated.Text>
-            </TouchableOpacity>
+              <TextInput
+                style={styles.input}
+                value={confirmPassword}
+                onChangeText={setConfirmPassword}
+                required
+                placeholder="Confirm Password"
+                placeholderTextColor={theme.colors.grey_deep_2}
+                secureTextEntry={!showConfirmPassword}
+              />
+              <Feather
+                name={showConfirmPassword ? "eye-off" : "eye"}
+                size={24}
+                color={theme.colors.grey_deep_2}
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+                style={styles.icon}
+              />
+            </Animated.View>
           </View>
           <Animated.View
             style={{ width: "100%" }}
-            entering={FadeInUp.duration(1200)}
+            entering={FadeInUp.duration(1400)}
           >
             <TouchableOpacity style={styles.signInBtn} onPress={handleSubmit}>
               {/* <MaterialCommunityIcons
-                name="email-variant"
+                name="account-plus"
                 size={24}
                 color={theme.colors.white}
                 style={styles.signInIcon}
               /> */}
-              <Text style={styles.signInText}>Sign In</Text>
+              <Text style={styles.signInText}>Sign Up</Text>
             </TouchableOpacity>
           </Animated.View>
           <Animated.View
-            entering={FadeInUp.duration(1300)}
+            entering={FadeInUp.duration(1500)}
             style={styles.signInOptions}
           >
-            <Text style={styles.optionText}>Or sign in with</Text>
+            <Text style={styles.optionText}>Or sign up with</Text>
           </Animated.View>
           <Animated.View
-            entering={FadeInUp.duration(1400)}
+            entering={FadeInUp.duration(1600)}
             style={styles.iconContainer}
           >
             <TouchableOpacity style={styles.socialSignInIcon}>
@@ -144,14 +182,14 @@ const SignIn = () => {
               />
             </TouchableOpacity>
           </Animated.View>
-          <Pressable onPress={() => router.push("signUp")}>
+          <Pressable onPress={() => router.push("signIn")}>
             <Animated.View
-              entering={FadeInUp.duration(1500)}
+              entering={FadeInUp.duration(1700)}
               style={styles.alreadyHaveAccount}
             >
               <Text style={styles.alreadyHaveAccountText}>
-                Don't have an account?{" "}
-                <Text style={styles.signUpLink}>Sign up</Text>
+                Already have an account?{" "}
+                <Text style={styles.signUpLink}>Sign in</Text>
               </Text>
             </Animated.View>
           </Pressable>
@@ -285,4 +323,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default SignIn;
+export default SignUp;
