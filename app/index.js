@@ -84,7 +84,7 @@ const WelcomeScreen = () => {
               styles.signUpBtn,
               pressed && styles.signUpBtnPressed,
             ]}
-            onPress={() => router.push("signUp")}
+            onPress={() => router.push("auth/signUp")}
           >
             <MaterialCommunityIcons
               name="email-variant"
@@ -107,7 +107,7 @@ const WelcomeScreen = () => {
           {/* Animated sign-in text */}
           <Animated.View style={[styles.signInCon, { opacity: fadeAnimText }]}>
             <Text style={styles.signInOut}>Already have an account?</Text>
-            <Pressable onPress={() => router.push("signIn")}>
+            <Pressable onPress={() => router.push("dashboard/home")}>
               <Text style={styles.signIntext}>Sign in</Text>
             </Pressable>
           </Animated.View>

@@ -37,7 +37,7 @@ const SignUp = () => {
     console.log("Email:", email);
     console.log("Password:", password);
     console.log("Confirm Password:", confirmPassword);
-    router.push("verifyOtp");
+    router.push("auth/verifyOtp");
   };
 
   return (
@@ -182,7 +182,7 @@ const SignUp = () => {
               />
             </TouchableOpacity>
           </Animated.View>
-          <Pressable onPress={() => router.push("signIn")}>
+          <Pressable onPress={() => router.push("auth/signIn")}>
             <Animated.View
               entering={FadeInUp.duration(1700)}
               style={styles.alreadyHaveAccount}

@@ -144,7 +144,7 @@ const SignIn = () => {
               />
             </TouchableOpacity>
           </Animated.View>
-          <Pressable onPress={() => router.push("signUp")}>
+          <Pressable onPress={() => router.push("auth/signUp")}>
             <Animated.View
               entering={FadeInUp.duration(1500)}
               style={styles.alreadyHaveAccount}

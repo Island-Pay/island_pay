@@ -8,6 +8,7 @@ import {
   Platform,
   ScrollView,
   TouchableOpacity,
+  Keyboard,
 } from "react-native";
 import { theme } from "../../constants/theme";
 import { hp, wp } from "../../helpers/common";
@@ -18,7 +19,6 @@ import { useRouter } from "expo-router";
 const VerifyOtp = () => {
   const [otp, setOtp] = useState(["", "", "", "", ""]);
   const inputRefs = useRef([]);
-
   const router = useRouter();
 
   useEffect(() => {
@@ -27,21 +27,47 @@ const VerifyOtp = () => {
   }, []);
 
   const handleOtpChange = (value, index) => {
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
+    if (/^\d*$/.test(value)) {
+      const newOtp = [...otp];
+      newOtp[index] = value.slice(-1); // Only keep the last digit if multiple are pasted
+      setOtp(newOtp);
 
-    // Move to next input if value is entered
-    if (value !== "" && index < 4) {
-      inputRefs.current[index + 1].focus();
+      // Move to next input if value is entered
+      if (value !== "" && index < 4) {
+        inputRefs.current[index + 1].focus();
+      } else if (index === 4 && value !== "") {
+        inputRefs.current[index].blur();
+        Keyboard.dismiss();
+      }
+    }
+  };
+
+  const handleKeyPress = (e, index) => {
+    if (e.nativeEvent.key === "Backspace") {
+      if (otp[index] === "" && index > 0) {
+        // Move to previous input if current is empty
+        inputRefs.current[index - 1].focus();
+      } else {
+        // Clear current input
+        const newOtp = [...otp];
+        newOtp[index] = "";
+        setOtp(newOtp);
+      }
     }
   };
 
   const handleSubmit = () => {
     const otpString = otp.join("");
-    console.log("Submitted OTP:", otpString);
-    router.push("CongratsScreen");
-    // Add your OTP verification logic here
+    if (otpString.length === 5) {
+      console.log("Submitted OTP:", otpString);
+      router.push("auth/congrats");
+      // Add your OTP verification logic here
+    }
+  };
+
+  const handleResendOtp = () => {
+    console.log("Resending OTP");
+    // Add your OTP resend logic here
   };
 
   return (
@@ -76,12 +102,15 @@ const VerifyOtp = () => {
                 style={styles.inputWrapper}
               >
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, digit ? styles.inputFilled : null]}
                   value={digit}
                   onChangeText={(value) => handleOtpChange(value, index)}
+                  onKeyPress={(e) => handleKeyPress(e, index)}
                   keyboardType="numeric"
                   maxLength={1}
                   ref={(ref) => (inputRefs.current[index] = ref)}
+                  caretHidden={true}
+                  selectTextOnFocus
                 />
               </Animated.View>
             ))}
@@ -90,7 +119,14 @@ const VerifyOtp = () => {
             style={{ width: "100%" }}
             entering={FadeInUp.duration(1600)}
           >
-            <TouchableOpacity style={styles.verifyBtn} onPress={handleSubmit}>
+            <TouchableOpacity
+              style={[
+                styles.verifyBtn,
+                !otp.every((digit) => digit !== "") && styles.verifyBtnDisabled,
+              ]}
+              onPress={handleSubmit}
+              disabled={!otp.every((digit) => digit !== "")}
+            >
               <MaterialCommunityIcons
                 name="check-circle"
                 size={24}
@@ -105,7 +141,7 @@ const VerifyOtp = () => {
             style={styles.resendContainer}
           >
             <Text style={styles.resendText}>Didn't receive the code? </Text>
-            <TouchableOpacity onPress={() => console.log("Resend OTP")}>
+            <TouchableOpacity onPress={handleResendOtp}>
               <Text style={styles.resendLink}>Resend OTP</Text>
             </TouchableOpacity>
           </Animated.View>
@@ -164,9 +200,13 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.sm,
     color: theme.colors.white,
     borderColor: "#454545",
-    borderWidth: 1,
+    borderWidth: 2,
     fontSize: 24,
     textAlign: "center",
+  },
+  inputFilled: {
+    borderColor: theme.colors.purple,
+    backgroundColor: theme.colors.grey_deep,
   },
   verifyBtn: {
     flexDirection: "row",
@@ -177,6 +217,9 @@ const styles = StyleSheet.create({
     borderRadius: theme.radius.md,
     marginTop: hp(2),
     width: "100%",
+  },
+  verifyBtnDisabled: {
+    backgroundColor: theme.colors.grey_clean,
   },
   verifyIcon: {
     marginRight: wp(2),
