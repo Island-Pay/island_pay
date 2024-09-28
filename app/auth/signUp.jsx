@@ -9,35 +9,56 @@ import {
   ScrollView,
   TouchableOpacity,
   Pressable,
+  Modal,
 } from "react-native";
 import { theme } from "../../constants/theme";
 import { hp, wp } from "../../helpers/common";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Feather from "@expo/vector-icons/Feather";
-import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
-import Animated, {
-  FadeInLeft,
-  FadeInRight,
-  FadeInUp,
-} from "react-native-reanimated";
+import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
 
+const countries = [
+  { name: "Nigeria", code: "+234" },
+  { name: "Kenya", code: "+254" },
+  { name: "Ghana", code: "+233" },
+  { name: "United States", code: "+1" },
+];
+
 const SignUp = () => {
-  const [fullName, setFullName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [middleName, setMiddleName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
+  const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [selectedCountry, setSelectedCountry] = useState(null);
+  const [isModalVisible, setModalVisible] = useState(false);
 
   const router = useRouter();
 
   const handleSubmit = () => {
-    console.log("Full Name:", fullName);
-    console.log("Email:", email);
-    console.log("Password:", password);
-    console.log("Confirm Password:", confirmPassword);
+    console.log({
+      firstName,
+      lastName,
+      middleName,
+      username,
+      email,
+      phoneNumber,
+      country: selectedCountry.name,
+      password,
+    });
     router.push("auth/verifyOtp");
+  };
+
+  const handleCountrySelect = (country) => {
+    setSelectedCountry(country);
+    setPhoneNumber(country.code);
+    setModalVisible(false);
   };
 
   return (
@@ -47,73 +68,159 @@ const SignUp = () => {
     >
       <ScrollView contentContainerStyle={styles.scrollView}>
         <Animated.Image
-          entering={FadeInLeft.duration(700)}
           source={require("../../assets/images/!slandPay.png")}
           style={styles.title}
         />
         <View style={styles.formCon}>
-          <Animated.Text
-            entering={FadeInLeft.duration(900)}
-            style={styles.header}
-          >
-            Sign up
-          </Animated.Text>
+          <Text style={styles.header}>Sign up</Text>
+
+          {/* First Name */}
           <View style={styles.inputGroup}>
-            <Animated.View
-              entering={FadeInLeft.duration(1000)}
-              style={styles.inputWrapper}
-            >
+            <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.input}
-                value={fullName}
-                onChangeText={setFullName}
-                autoCorrect={false}
-                required
-                placeholder="Full Name..."
+                value={firstName}
+                onChangeText={setFirstName}
+                placeholder="First Name"
                 placeholderTextColor={theme.colors.grey_deep_2}
               />
               <MaterialCommunityIcons
-                name="account"
+                name="account-outline"
                 size={24}
                 color={theme.colors.grey_deep_2}
                 style={styles.icon}
               />
-            </Animated.View>
+            </View>
           </View>
+
+          {/* Last Name */}
           <View style={styles.inputGroup}>
-            <Animated.View
-              entering={FadeInLeft.duration(1100)}
-              style={styles.inputWrapper}
-            >
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                value={lastName}
+                onChangeText={setLastName}
+                placeholder="Last Name"
+                placeholderTextColor={theme.colors.grey_deep_2}
+              />
+              <MaterialCommunityIcons
+                name="account-outline"
+                size={24}
+                color={theme.colors.grey_deep_2}
+                style={styles.icon}
+              />
+            </View>
+          </View>
+
+          {/* Middle Name */}
+          <View style={styles.inputGroup}>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                value={middleName}
+                onChangeText={setMiddleName}
+                placeholder="Middle Name"
+                placeholderTextColor={theme.colors.grey_deep_2}
+              />
+              <MaterialCommunityIcons
+                name="account-outline"
+                size={24}
+                color={theme.colors.grey_deep_2}
+                style={styles.icon}
+              />
+            </View>
+          </View>
+
+          {/* Username */}
+          <View style={styles.inputGroup}>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                value={username}
+                onChangeText={setUsername}
+                placeholder="Username"
+                placeholderTextColor={theme.colors.grey_deep_2}
+              />
+              <MaterialCommunityIcons
+                name="account-circle-outline"
+                size={24}
+                color={theme.colors.grey_deep_2}
+                style={styles.icon}
+              />
+            </View>
+          </View>
+
+          {/* Email */}
+          <View style={styles.inputGroup}>
+            <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.input}
                 value={email}
                 onChangeText={setEmail}
                 keyboardType="email-address"
                 autoCapitalize="none"
-                autoCorrect={false}
-                required
-                placeholder="Email..."
+                placeholder="Email"
                 placeholderTextColor={theme.colors.grey_deep_2}
               />
               <MaterialCommunityIcons
-                name="email-variant"
+                name="email-outline"
                 size={24}
                 color={theme.colors.grey_deep_2}
                 style={styles.icon}
               />
-            </Animated.View>
+            </View>
           </View>
+
+          {/* Country */}
           <View style={styles.inputGroup}>
-            <Animated.View
-              entering={FadeInLeft.duration(1200)}
+            <Pressable
+              onPress={() => setModalVisible(true)}
               style={styles.inputWrapper}
             >
               <TextInput
                 style={styles.input}
+                value={selectedCountry ? selectedCountry.name : ""}
+                placeholder="Select Country"
+                placeholderTextColor={theme.colors.grey_deep_2}
+                editable={false}
+              />
+              <MaterialCommunityIcons
+                name="earth"
+                size={24}
+                color={theme.colors.grey_deep_2}
+                style={styles.icon}
+              />
+            </Pressable>
+          </View>
+
+          {/* Phone Number */}
+          <View style={styles.inputGroup}>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
+                value={phoneNumber}
+                onChangeText={setPhoneNumber}
+                keyboardType="phone-pad"
+                placeholder="Phone Number"
+                placeholderTextColor={theme.colors.grey_deep_2}
+                editable={!!selectedCountry}
+              />
+              <MaterialCommunityIcons
+                name="phone-outline"
+                size={24}
+                color={theme.colors.grey_deep_2}
+                style={styles.icon}
+              />
+            </View>
+          </View>
+
+          {/* Password */}
+          <View style={styles.inputGroup}>
+            <View style={styles.inputWrapper}>
+              <TextInput
+                style={styles.input}
                 value={password}
                 onChangeText={setPassword}
-                required
                 placeholder="Password"
                 placeholderTextColor={theme.colors.grey_deep_2}
                 secureTextEntry={!showPassword}
@@ -125,18 +232,22 @@ const SignUp = () => {
                 onPress={() => setShowPassword(!showPassword)}
                 style={styles.icon}
               />
-            </Animated.View>
+              {/* <MaterialCommunityIcons
+                name="lock-outline"
+                size={24}
+                color={theme.colors.grey_deep_2}
+                style={styles.lockIcon}
+              /> */}
+            </View>
           </View>
+
+          {/* Confirm Password */}
           <View style={styles.inputGroup}>
-            <Animated.View
-              entering={FadeInLeft.duration(1300)}
-              style={styles.inputWrapper}
-            >
+            <View style={styles.inputWrapper}>
               <TextInput
                 style={styles.input}
                 value={confirmPassword}
                 onChangeText={setConfirmPassword}
-                required
                 placeholder="Confirm Password"
                 placeholderTextColor={theme.colors.grey_deep_2}
                 secureTextEntry={!showConfirmPassword}
@@ -148,50 +259,49 @@ const SignUp = () => {
                 onPress={() => setShowConfirmPassword(!showConfirmPassword)}
                 style={styles.icon}
               />
-            </Animated.View>
-          </View>
-          <Animated.View
-            style={{ width: "100%" }}
-            entering={FadeInUp.duration(1400)}
-          >
-            <TouchableOpacity style={styles.signInBtn} onPress={handleSubmit}>
               {/* <MaterialCommunityIcons
-                name="account-plus"
+                name="lock-outline"
                 size={24}
-                color={theme.colors.white}
-                style={styles.signInIcon}
-              /> */}
-              <Text style={styles.signInText}>Sign Up</Text>
-            </TouchableOpacity>
-          </Animated.View>
-          <Animated.View
-            entering={FadeInUp.duration(1500)}
-            style={styles.signInOptions}
-          >
-            <Text style={styles.optionText}>Or sign up with</Text>
-          </Animated.View>
-          <Animated.View
-            entering={FadeInUp.duration(1600)}
-            style={styles.iconContainer}
-          >
-            <TouchableOpacity style={styles.socialSignInIcon}>
-              <FontAwesome5
-                name="google"
-                size={20}
                 color={theme.colors.grey_deep_2}
-              />
-            </TouchableOpacity>
-          </Animated.View>
+                style={styles.lockIcon}
+              /> */}
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.signInBtn} onPress={handleSubmit}>
+            <Text style={styles.signInText}>Sign Up</Text>
+          </TouchableOpacity>
+
+          {/* Country Selection Modal */}
+          <Modal
+            animationType="slide"
+            transparent={true}
+            visible={isModalVisible}
+            onRequestClose={() => setModalVisible(false)}
+          >
+            <View style={styles.modalContainer}>
+              <View style={styles.modalContent}>
+                <View style={styles.modalLine}></View>
+                {countries.map((country) => (
+                  <TouchableOpacity
+                    key={country.code}
+                    onPress={() => handleCountrySelect(country)}
+                    style={styles.countryOption}
+                  >
+                    <Text style={styles.countryText}>{country.name}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </Modal>
+
           <Pressable onPress={() => router.push("auth/signIn")}>
-            <Animated.View
-              entering={FadeInUp.duration(1700)}
-              style={styles.alreadyHaveAccount}
-            >
+            <View style={styles.alreadyHaveAccount}>
               <Text style={styles.alreadyHaveAccountText}>
                 Already have an account?{" "}
                 <Text style={styles.signUpLink}>Sign in</Text>
               </Text>
-            </Animated.View>
+            </View>
           </Pressable>
         </View>
       </ScrollView>
@@ -203,123 +313,105 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.black,
-    ...Platform.select({
-      web: {
-        justifyContent: "center",
-        alignItems: "center",
-      },
-    }),
   },
   scrollView: {
-    flexGrow: 1,
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: Platform.OS === "web" ? "3rem" : hp(2),
-    paddingBottom: hp(3),
+    paddingHorizontal: wp(5),
   },
   title: {
-    width: wp(30),
-    height: wp(30),
-    resizeMode: "contain",
-    marginTop: hp(2),
+    alignSelf: "center",
+    marginTop: hp(5),
+    marginBottom: hp(2),
   },
   formCon: {
-    width: wp(80),
-    alignItems: "center",
+    marginTop: hp(4),
   },
   header: {
-    fontSize: 32,
     color: theme.colors.white,
-    marginBottom: hp(3),
     fontWeight: "bold",
-    alignSelf: "flex-start",
+    fontSize: 26,
+    marginBottom: hp(2),
   },
   inputGroup: {
-    width: "100%",
     marginBottom: hp(2),
   },
   inputWrapper: {
-    width: "100%",
-    position: "relative",
-  },
-  input: {
-    width: "100%",
-    padding: hp(1.5),
-    backgroundColor: theme.colors.grey_deep,
-    borderRadius: theme.radius.sm,
-    color: theme.colors.white,
-    borderColor: "#454545",
-    borderWidth: 1,
-    paddingRight: wp(12),
-    fontSize: Platform.OS === "web" ? "1rem" : 16,
-  },
-  icon: {
-    position: "absolute",
-    right: wp(4),
-    top: "50%",
-    transform: [{ translateY: -12 }],
-  },
-  forgotPassword: {
-    alignSelf: "flex-end",
-    marginTop: hp(1),
-  },
-  forgotPasswordText: {
-    color: theme.colors.grey_clean,
-    fontSize: 14,
-    textDecorationLine: "underline",
-  },
-  signInBtn: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: theme.colors.purple,
-    paddingVertical: Platform.OS === "web" ? "1.5rem" : hp(2),
-    borderRadius: theme.radius.md,
-    marginTop: hp(2),
-    width: "100%",
+    borderWidth: 1,
+    borderColor: theme.colors.grey_deep,
+    borderRadius: 8,
+    paddingVertical: hp(1.5),
+    paddingHorizontal: wp(3),
   },
-  signInIcon: {
-    marginRight: wp(2),
+  input: {
+    flex: 1,
+    color: theme.colors.white,
+    fontSize: 16,
+    paddingHorizontal: wp(3),
+  },
+  icon: {
+    marginLeft: wp(1),
+  },
+  lockIcon: {
+    marginLeft: wp(1),
+  },
+  signInBtn: {
+    backgroundColor: theme.colors.purple,
+    paddingVertical: hp(2),
+    borderRadius: theme.radius.lg,
+    marginTop: hp(3),
   },
   signInText: {
     color: theme.colors.white,
-    fontSize: Platform.OS === "web" ? "1.25rem" : 18,
+    textAlign: "center",
     fontWeight: "bold",
-  },
-  signInOptions: {
-    marginTop: hp(3),
-    alignItems: "center",
-  },
-  optionText: {
-    color: theme.colors.grey_clean,
-    fontSize: Platform.OS === "web" ? "1rem" : 16,
-    marginBottom: hp(2),
-  },
-  iconContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    width: "100%",
-    marginBottom: hp(3),
-  },
-  socialSignInIcon: {
-    backgroundColor: theme.colors.grey_deep,
-    padding: hp(1.5),
-    borderRadius: 10,
-    width: wp(12),
-    height: wp(12),
-    justifyContent: "center",
-    alignItems: "center",
+    fontSize: 16,
   },
   alreadyHaveAccount: {
-    alignItems: "center",
+    marginTop: hp(3),
   },
   alreadyHaveAccountText: {
-    color: theme.colors.grey_clean,
-    fontSize: 14,
+    color: theme.colors.white,
+    textAlign: "center",
+    fontSize: 16,
   },
   signUpLink: {
     color: theme.colors.purple,
     textDecorationLine: "underline",
+    fontWeight: "bold",
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalLine: {
+    backgroundColor: theme.colors.white,
+    height: 4,
+    width: wp(20),
+    alignSelf: "center",
+    borderRadius: 10,
+    marginTop: 4,
+    marginBottom: 30,
+  },
+  modalContent: {
+    backgroundColor: theme.colors.grey_deep,
+    paddingVertical: hp(2),
+    borderTopLeftRadius: theme.radius.lg,
+    borderTopRightRadius: theme.radius.lg,
+    paddingHorizontal: wp(5),
+  },
+  countryOption: {
+    padding: hp(2),
+    backgroundColor: theme.colors.grey_deep_2,
+    marginVertical: hp(1),
+    borderRadius: 10,
+    color: theme.colors.white,
+  },
+  countryText: {
+    color: theme.colors.white,
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 

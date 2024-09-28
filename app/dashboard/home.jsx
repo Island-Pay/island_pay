@@ -9,7 +9,7 @@ import {
   StatusBar,
   Image,
 } from "react-native";
-import { useRouter } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { theme } from "../../constants/theme";
 import { hp, wp } from "../../helpers/common";
 import { Ionicons } from "@expo/vector-icons";
@@ -27,15 +27,21 @@ const MODAL_HEIGHT = 400;
 const DashboardScreen = () => {
   const router = useRouter();
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
-  const [selectedAccount, setSelectedAccount] = useState("Nigerian Account");
   const [isModalVisible, setIsModalVisible] = useState(false);
 
   const accounts = [
-    "Nigerian Account",
-    "USD Account",
-    "EUR Account",
-    "GBP Account",
+    {
+      name: "Nigerian Account",
+      currency: "₦",
+      flag: "🇳🇬",
+      balance: "2,000,000.00",
+    },
+    { name: "USD Account", currency: "$", flag: "🇺🇸", balance: "5,000.00" },
+    { name: "EUR Account", currency: "€", flag: "🇪🇺", balance: "4,500.00" },
+    { name: "GBP Account", currency: "£", flag: "🇬🇧", balance: "3,800.00" },
   ];
+
+  const [selectedAccount, setSelectedAccount] = useState(accounts[0]);
 
   const modalY = useSharedValue(MODAL_HEIGHT);
 
@@ -88,7 +94,9 @@ const DashboardScreen = () => {
 
         <View style={styles.accountContainer}>
           <TouchableOpacity style={styles.accountSelector} onPress={showModal}>
-            <Text style={styles.accountSelectorText}>{selectedAccount}</Text>
+            <Text style={styles.accountSelectorText}>
+              {selectedAccount.flag} {selectedAccount.name}
+            </Text>
             <Ionicons
               name="chevron-down"
               size={20}
@@ -100,7 +108,9 @@ const DashboardScreen = () => {
             <View>
               <Text style={styles.balanceLabel}>Balance</Text>
               <Text style={styles.balanceAmount}>
-                {isBalanceVisible ? "$5,000.00" : "********"}
+                {isBalanceVisible
+                  ? `${selectedAccount.currency}${selectedAccount.balance}`
+                  : "********"}
               </Text>
             </View>
             <TouchableOpacity onPress={toggleBalanceVisibility}>
@@ -113,10 +123,10 @@ const DashboardScreen = () => {
           </View>
           <View style={styles.actionButtonsContainer}>
             {[
-              { icon: "wallet", text: "Account", active: true },
-              { icon: "add-circle", text: "Add" },
-              { icon: "arrow-up-circle", text: "Send" },
-              { icon: "swap-horizontal", text: "Convert" },
+              { icon: "wallet", text: "Account", active: true, to: "/wallet" },
+              { icon: "add-circle", text: "Add", to: "/addFunds" },
+              { icon: "arrow-up-circle", text: "Send", to: "sendFunds" },
+              { icon: "swap-horizontal", text: "Convert", to: "convertFunds" },
             ].map((item, index) => (
               <View key={index} style={styles.actionButtonWrapper}>
                 <TouchableOpacity
@@ -124,6 +134,7 @@ const DashboardScreen = () => {
                     styles.actionButton,
                     item.active && styles.activeActionButton,
                   ]}
+                  onPress={() => router.push(item.to)}
                 >
                   <Ionicons
                     name={item.icon}
@@ -131,6 +142,7 @@ const DashboardScreen = () => {
                     color={theme.colors.white}
                   />
                 </TouchableOpacity>
+
                 <Text
                   style={[
                     styles.actionButtonText,
@@ -207,7 +219,9 @@ const DashboardScreen = () => {
                 style={styles.modalItem}
                 onPress={() => handleAccountSelect(account)}
               >
-                <Text style={styles.modalItemText}>{account}</Text>
+                <Text style={styles.modalItemText}>
+                  {account.flag} {account.name}
+                </Text>
               </TouchableOpacity>
             ))}
           </Animated.View>
@@ -399,8 +413,6 @@ const styles = StyleSheet.create({
     marginVertical: hp(1),
     borderRadius: 10,
     color: theme.colors.white,
-    // borderBottomWidth: 1,
-    // borderBottomColor: theme.colors.grey_clean,
   },
   modalItemText: {
     color: theme.colors.white,

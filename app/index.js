@@ -94,7 +94,7 @@ const WelcomeScreen = () => {
             />
             <Text style={styles.signUpText}>Sign Up with Email</Text>
           </Pressable>
-          <Pressable
+          {/* <Pressable
             style={({ pressed }) => [
               styles.signUpBtn2,
               pressed && styles.signUpBtnPressed,
@@ -102,7 +102,7 @@ const WelcomeScreen = () => {
           >
             <FontAwesome6 name="google" size={24} style={styles.signUpicon} />
             <Text style={styles.signUpText2}>Sign Up with Google</Text>
-          </Pressable>
+          </Pressable> */}
 
           {/* Animated sign-in text */}
           <Animated.View style={[styles.signInCon, { opacity: fadeAnimText }]}>
