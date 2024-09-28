@@ -33,7 +33,7 @@ const SignIn = () => {
   };
 
   const handleForgotPassword = () => {
-    console.log("Forgot password");
+    router.push("auth/forgotPassword");
   };
 
   return (
