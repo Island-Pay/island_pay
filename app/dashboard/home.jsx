@@ -12,7 +12,7 @@ import {
 import { Link, useRouter } from "expo-router";
 import { theme } from "../../constants/theme";
 import { hp, wp } from "../../helpers/common";
-import { Ionicons } from "@expo/vector-icons";
+import { Ionicons, MaterialCommunityIcons } from "@expo/vector-icons";
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -75,6 +75,15 @@ const DashboardScreen = () => {
       transform: [{ translateY: Math.max(0, modalY.value) }],
     };
   });
+
+  const recommendedServices = [
+    { name: "Invoices", icon: "receipt-outline" },
+    { name: "Bills & Airtime", icon: "cellular-outline" },
+    { name: "Gift Cards", icon: "gift-outline" },
+    { name: "Analytics", icon: "stats-chart-outline" },
+    { name: "Payment Links", icon: "link-outline" },
+    { name: "Pouch", icon: "wallet-outline" },
+  ];
 
   return (
     <View style={styles.container}>
@@ -178,21 +187,14 @@ const DashboardScreen = () => {
         <View style={styles.recommendedContainer}>
           <Text style={styles.recommendedTitle}>Recommended</Text>
           <View style={styles.servicesGrid}>
-            {[
-              "Invoices",
-              "Bills & Airtime",
-              "Gift Cards",
-              "Analytics",
-              "Payment Links",
-              "Pouch",
-            ].map((service, index) => (
+            {recommendedServices.map((service, index) => (
               <TouchableOpacity key={index} style={styles.serviceItem}>
                 <Ionicons
-                  name="cube-outline"
+                  name={service.icon}
                   size={24}
                   color={theme.colors.purple}
                 />
-                <Text style={styles.serviceText}>{service}</Text>
+                <Text style={styles.serviceText}>{service.name}</Text>
               </TouchableOpacity>
             ))}
           </View>

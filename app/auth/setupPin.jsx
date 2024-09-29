@@ -14,6 +14,7 @@ import { hp, wp } from "../../helpers/common";
 import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import useUserStore from '../../store/userStore';
 
 const SetupPin = () => {
   const router = useRouter();
@@ -22,6 +23,8 @@ const SetupPin = () => {
   const [isPinConfirmationMode, setIsPinConfirmationMode] = useState(false);
   const inputRefs = useRef([]);
   const confirmInputRefs = useRef([]);
+
+  const updateUser = useUserStore((state) => state.updateUser);
 
   useEffect(() => {
     // Focus the first input when the component mounts
@@ -74,8 +77,9 @@ const SetupPin = () => {
     if (confirmPin.every((digit) => digit !== "")) {
       if (pin.join("") === confirmPin.join("")) {
         // Here you would typically save the PIN securely
-        // For this example, we'll just navigate to the next screen
-        router.push("auth/pinCreated");
+        // Update the global state with the PIN (in a real app, never store the PIN directly)
+        updateUser({ pin: pin.join("") });
+        router.push("dashboard/home");
       } else {
         Alert.alert(
           "PIN Mismatch",
@@ -138,11 +142,11 @@ const SetupPin = () => {
         <Animated.View entering={FadeInUp.duration(1000).delay(900)}>
           {isPinConfirmationMode
             ? renderPinInputs(
-                confirmPin,
-                confirmInputRefs,
-                (text, index) => handlePinChange(text, index, true),
-                (e, index) => handleKeyPress(e, index, true)
-              )
+              confirmPin,
+              confirmInputRefs,
+              (text, index) => handlePinChange(text, index, true),
+              (e, index) => handleKeyPress(e, index, true)
+            )
             : renderPinInputs(pin, inputRefs, handlePinChange, handleKeyPress)}
         </Animated.View>
         <Animated.View
@@ -153,8 +157,8 @@ const SetupPin = () => {
             style={[
               styles.button,
               (!isPinConfirmationMode && !pin.every((digit) => digit !== "")) ||
-              (isPinConfirmationMode &&
-                !confirmPin.every((digit) => digit !== ""))
+                (isPinConfirmationMode &&
+                  !confirmPin.every((digit) => digit !== ""))
                 ? styles.buttonDisabled
                 : null,
             ]}

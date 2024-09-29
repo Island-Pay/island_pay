@@ -15,11 +15,13 @@ import { hp, wp } from "../../helpers/common";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Animated, { FadeInLeft, FadeInUp } from "react-native-reanimated";
 import { useRouter } from "expo-router";
+import useUserStore from '../../store/userStore';
 
 const VerifyOtp = () => {
   const [otp, setOtp] = useState(["", "", "", "", ""]);
   const inputRefs = useRef([]);
   const router = useRouter();
+  const setUser = useUserStore((state) => state.setUser);
 
   useEffect(() => {
     // Focus the first input when the component mounts
@@ -60,7 +62,9 @@ const VerifyOtp = () => {
     const otpString = otp.join("");
     if (otpString.length === 5) {
       console.log("Submitted OTP:", otpString);
-      router.push("auth/congrats");
+      // Initialize user data in the store
+      setUser({ otp: otpString });
+      router.push("auth/finalSignUp");
       // Add your OTP verification logic here
     }
   };

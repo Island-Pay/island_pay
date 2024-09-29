@@ -9,6 +9,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Pressable,
+  Alert,
 } from "react-native";
 import { theme } from "../../constants/theme";
 import { hp, wp } from "../../helpers/common";
@@ -18,6 +19,9 @@ import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import ProgressBar from "./components/ProgressBar";
 import CountrySelector from "./components/CountrySelector";
+import useUserStore from "../../store/userStore";
+import axios from "axios"; // Make sure to install axios: npm install axios
+import { EXPO_PUBLIC_API_ENDPOINT } from '@env';
 
 const SignUp = () => {
   const [firstName, setFirstName] = useState("");
@@ -31,10 +35,17 @@ const SignUp = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [selectedCountry, setSelectedCountry] = useState(null);
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [country, setCountry] = useState("");
+  const [zipCode, setZipCode] = useState("");
   const [step, setStep] = useState(1);
-  const totalSteps = 4;
+  const totalSteps = 5;
 
   const router = useRouter();
+  const setUser = useUserStore((state) => state.setUser);
 
   const handleNext = () => {
     if (step < totalSteps) {
@@ -50,18 +61,37 @@ const SignUp = () => {
     }
   };
 
-  const handleSubmit = () => {
-    console.log({
+  const handleSubmit = async () => {
+    if (password !== confirmPassword) {
+      Alert.alert("Error", "Passwords do not match");
+      return;
+    }
+
+    const userData = {
       firstName,
       lastName,
       middleName,
       username,
       email,
       phoneNumber,
-      country: selectedCountry.name,
+      country: selectedCountry?.name || country,
       password,
-    });
-    router.push("auth/verifyOtp");
+      dateOfBirth,
+      address,
+      city,
+      state,
+      zipCode,
+    };
+
+    try {
+      const response = await axios.post(`${EXPO_PUBLIC_API_ENDPOINT}/register/1`, userData);
+      console.log("Signup successful:", response.data);
+      setUser(response.data.user); // Assuming the API returns user data
+      router.push("auth/verifyOtp");
+    } catch (error) {
+      console.error("Signup error:", error);
+      Alert.alert("Error", error.response?.data?.message || "An error occurred during signup");
+    }
   };
 
   const renderStep = () => {
@@ -129,6 +159,48 @@ const SignUp = () => {
           </>
         );
       case 4:
+        return (
+          <>
+            <Text style={styles.stepTitle}>Address Information</Text>
+            <InputField
+              value={dateOfBirth}
+              onChangeText={setDateOfBirth}
+              placeholder="Date of Birth (YYYY-MM-DD)"
+              icon="calendar"
+            />
+            <InputField
+              value={address}
+              onChangeText={setAddress}
+              placeholder="Address"
+              icon="map-marker-outline"
+            />
+            <InputField
+              value={city}
+              onChangeText={setCity}
+              placeholder="City"
+              icon="city"
+            />
+            <InputField
+              value={state}
+              onChangeText={setState}
+              placeholder="State"
+              icon="map-outline"
+            />
+            <InputField
+              value={country}
+              onChangeText={setCountry}
+              placeholder="Country"
+              icon="flag-outline"
+            />
+            <InputField
+              value={zipCode}
+              onChangeText={setZipCode}
+              placeholder="Zip Code"
+              icon="mailbox-outline"
+            />
+          </>
+        );
+      case 5:
         return (
           <>
             <Text style={styles.stepTitle}>Set Password</Text>

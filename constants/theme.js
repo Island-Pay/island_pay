@@ -2,11 +2,11 @@ export const theme = {
   colors: {
     white: "#fff",
     grey_deep: "#212121",
-    purple: "#AA4DF1",
+    purple: "#6b328c",
     red: "#FF194F",
     orange: "#FF7024",
     darkerPurple: "#574470",
-    black: "#000",
+    black: "#111",
     grey_clean: "#BBBBBB",
     grey_deep_2: "#666666",
     linear: ["#6200EE", "#3700B3"],
