@@ -7,10 +7,13 @@ import {
   TouchableOpacity,
   Modal,
   FlatList,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { theme } from "../../constants/theme";
 import { wp, hp } from "../../helpers/common";
+import { useGetDepositLink } from "../apiCall/apiCall";
+import { router } from "expo-router";
 
 const countries = [
   { name: "Nigeria", code: "NGN", symbol: "₦", flag: "🇳🇬" },
@@ -23,14 +26,34 @@ const AddFunds = () => {
   const [selectedCurrency, setSelectedCurrency] = useState(countries[0]);
   const [amount, setAmount] = useState("");
   const [isModalVisible, setModalVisible] = useState(false);
+  const [depositLink, setDepositLink] = useState(null);
+
+  const depositLinkMutation = useGetDepositLink();
 
   const handleCurrencySelect = (currency) => {
     setSelectedCurrency(currency);
     setModalVisible(false);
   };
 
-  const handleAddFunds = () => {
-    alert(`Added ${selectedCurrency.symbol}${amount} to your account!`);
+  const handleAddFunds = async () => {
+    if (!amount || isNaN(amount)) {
+      alert("Please enter a valid amount");
+      return;
+    }
+
+    try {
+      const result = await depositLinkMutation.mutateAsync({
+        currency: selectedCurrency.code,
+        amount: parseFloat(amount),
+      });
+      setDepositLink(result);
+      // Here you might want to navigate to a web view to show the deposit link
+      // or handle it in some other way depending on your app's flow
+      alert(`Deposit link created successfully! Link: ${result}`);
+      router.push("dashboard");
+    } catch (error) {
+      alert(`Error creating deposit link: ${error.message}`);
+    }
   };
 
   const renderCurrencyItem = ({ item }) => (
@@ -74,9 +97,26 @@ const AddFunds = () => {
         />
       </View>
 
-      <TouchableOpacity style={styles.addButton} onPress={handleAddFunds}>
-        <Text style={styles.addButtonText}>Add Funds</Text>
+      <TouchableOpacity
+        style={[
+          styles.addButton,
+          depositLinkMutation.isLoading && styles.addButtonDisabled,
+        ]}
+        onPress={handleAddFunds}
+        disabled={depositLinkMutation.isLoading}
+      >
+        {depositLinkMutation.isLoading ? (
+          <ActivityIndicator size="small" color={theme.colors.white} />
+        ) : (
+          <Text style={styles.addButtonText}>Add Funds</Text>
+        )}
       </TouchableOpacity>
+
+      {depositLinkMutation.isError && (
+        <Text style={styles.errorText}>
+          Error: {depositLinkMutation.error.message}
+        </Text>
+      )}
 
       <Modal
         animationType="slide"

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -8,10 +8,12 @@ import {
   FlatList,
   TextInput,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { theme } from "../../constants/theme";
 import { wp, hp } from "../../helpers/common";
+import { useGetRate, useConvertMoney } from "../apiCall/apiCall";
 
 const currencies = [
   { name: "Nigeria", code: "NGN", symbol: "₦", flag: "🇳🇬" },
@@ -24,7 +26,7 @@ const currencies = [
   { name: "Central African CFA", code: "XAF", symbol: "CFA", flag: "🇨🇲" },
 ];
 
-const convertFunds = () => {
+const ConvertFunds = () => {
   const [fromCurrency, setFromCurrency] = useState(currencies[0]);
   const [toCurrency, setToCurrency] = useState(currencies[1]);
   const [amount, setAmount] = useState("");
@@ -32,6 +34,21 @@ const convertFunds = () => {
   const [isFromModalVisible, setFromModalVisible] = useState(false);
   const [isToModalVisible, setToModalVisible] = useState(false);
   const [isPinModalVisible, setPinModalVisible] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+
+  const {
+    data: rateData,
+    refetch: fetchRate,
+    isLoading: isRateLoading,
+  } = useGetRate(fromCurrency.code, toCurrency.code);
+  const { mutate: convertMoney, isLoading: isConvertLoading } =
+    useConvertMoney();
+
+  useEffect(() => {
+    if (fromCurrency && toCurrency) {
+      fetchRate();
+    }
+  }, [fromCurrency, toCurrency]);
 
   const handleCurrencySelect = (currency, type) => {
     if (type === "from") {
@@ -45,6 +62,38 @@ const convertFunds = () => {
 
   const handleConvert = () => {
     setPinModalVisible(true);
+  };
+
+  const handlePinSubmit = () => {
+    setIsLoading(true);
+    convertMoney(
+      {
+        from: fromCurrency.code,
+        to: toCurrency.code,
+        pin,
+        amount: parseFloat(amount),
+      },
+      {
+        onSuccess: (data) => {
+          if (data.Access && data.Converted) {
+            alert("Conversion successful!");
+          } else {
+            alert("Conversion failed: " + data.Error);
+          }
+          setPinModalVisible(false);
+          setIsLoading(false);
+        },
+        onError: () => {
+          alert("An error occurred during conversion.");
+          setIsLoading(false);
+        },
+      }
+    );
+  };
+
+  const swapCurrencies = () => {
+    setFromCurrency(toCurrency);
+    setToCurrency(fromCurrency);
   };
 
   const renderCurrencyItem = ({ item }, type) => (
@@ -62,33 +111,43 @@ const convertFunds = () => {
     <View style={styles.container}>
       <Text style={styles.title}>Convert Funds</Text>
 
-      <TouchableOpacity
-        style={styles.currencySelector}
-        onPress={() => setFromModalVisible(true)}
-      >
-        <Text style={styles.currencySelectorText}>
-          {fromCurrency.flag} {fromCurrency.code}
-        </Text>
-        <MaterialIcons
-          name="arrow-drop-down"
-          size={24}
-          color={theme.colors.white}
-        />
-      </TouchableOpacity>
+      <View style={styles.currencyContainer}>
+        <TouchableOpacity
+          style={styles.currencySelector}
+          onPress={() => setFromModalVisible(true)}
+        >
+          <Text style={styles.currencySelectorText}>
+            {fromCurrency.flag} {fromCurrency.code}
+          </Text>
+          <MaterialIcons
+            name="arrow-drop-down"
+            size={24}
+            color={theme.colors.white}
+          />
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.currencySelector}
-        onPress={() => setToModalVisible(true)}
-      >
-        <Text style={styles.currencySelectorText}>
-          {toCurrency.flag} {toCurrency.code}
-        </Text>
-        <MaterialIcons
-          name="arrow-drop-down"
-          size={24}
-          color={theme.colors.white}
-        />
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.swapButton} onPress={swapCurrencies}>
+          <MaterialIcons
+            name="swap-horiz"
+            size={24}
+            color={theme.colors.purple}
+          />
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.currencySelector}
+          onPress={() => setToModalVisible(true)}
+        >
+          <Text style={styles.currencySelectorText}>
+            {toCurrency.flag} {toCurrency.code}
+          </Text>
+          <MaterialIcons
+            name="arrow-drop-down"
+            size={24}
+            color={theme.colors.white}
+          />
+        </TouchableOpacity>
+      </View>
 
       <View style={styles.amountContainer}>
         <Text style={styles.currencySymbol}>{fromCurrency.symbol}</Text>
@@ -102,40 +161,58 @@ const convertFunds = () => {
         />
       </View>
 
-      <TouchableOpacity style={styles.convertButton} onPress={handleConvert}>
-        <Text style={styles.convertButtonText}>Convert</Text>
+      {isRateLoading ? (
+        <ActivityIndicator size="large" color={theme.colors.purple} />
+      ) : (
+        rateData && (
+          <>
+            <Text style={styles.rateText}>
+              Conversion Rate: {rateData.Rate}
+            </Text>
+            {amount !== "" && (
+              <Text style={styles.rateText}>
+                You'll Get {toCurrency.code}{" "}
+                {(rateData.Rate * parseFloat(amount)).toFixed(2)}
+              </Text>
+            )}
+          </>
+        )
+      )}
+
+      <TouchableOpacity
+        style={[
+          styles.convertButton,
+          (!amount || isLoading) && styles.disabledButton,
+        ]}
+        onPress={handleConvert}
+        disabled={!amount || isLoading}
+      >
+        {isLoading ? (
+          <ActivityIndicator size="small" color={theme.colors.white} />
+        ) : (
+          <Text style={styles.convertButtonText}>Convert</Text>
+        )}
       </TouchableOpacity>
 
       <Modal
         animationType="slide"
         transparent={true}
-        visible={isFromModalVisible}
-        onRequestClose={() => setFromModalVisible(false)}
+        visible={isFromModalVisible || isToModalVisible}
+        onRequestClose={() => {
+          setFromModalVisible(false);
+          setToModalVisible(false);
+        }}
       >
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select From Currency</Text>
+            <Text style={styles.modalTitle}>
+              Select {isFromModalVisible ? "From" : "To"} Currency
+            </Text>
             <FlatList
               data={currencies}
-              renderItem={(item) => renderCurrencyItem(item, "from")}
-              keyExtractor={(item) => item.code}
-            />
-          </View>
-        </View>
-      </Modal>
-
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={isToModalVisible}
-        onRequestClose={() => setToModalVisible(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select To Currency</Text>
-            <FlatList
-              data={currencies}
-              renderItem={(item) => renderCurrencyItem(item, "to")}
+              renderItem={(item) =>
+                renderCurrencyItem(item, isFromModalVisible ? "from" : "to")
+              }
               keyExtractor={(item) => item.code}
             />
           </View>
@@ -161,14 +238,20 @@ const convertFunds = () => {
               onChangeText={setPin}
               keyboardType="numeric"
               secureTextEntry={true}
-              placeholder="Enter your PIN"
+              placeholder=""
               placeholderTextColor={theme.colors.grey_clean}
+              maxLength={4}
             />
             <TouchableOpacity
-              style={styles.submitButton}
-              onPress={() => setPinModalVisible(false)}
+              style={[styles.submitButton, !pin && styles.disabledButton]}
+              onPress={handlePinSubmit}
+              disabled={!pin || isLoading}
             >
-              <Text style={styles.submitButtonText}>Submit</Text>
+              {isConvertLoading ? (
+                <ActivityIndicator size="small" color={theme.colors.white} />
+              ) : (
+                <Text style={styles.submitButtonText}>Submit</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>
@@ -177,7 +260,7 @@ const convertFunds = () => {
   );
 };
 
-export default convertFunds;
+export default ConvertFunds;
 
 const styles = StyleSheet.create({
   container: {
@@ -188,9 +271,16 @@ const styles = StyleSheet.create({
     padding: wp(5),
   },
   title: {
-    fontSize: wp(6),
+    fontSize: wp(8),
     fontWeight: theme.fontWeights.bold,
     color: theme.colors.white,
+    marginBottom: hp(5),
+  },
+  currencyContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    width: wp(90),
     marginBottom: hp(3),
   },
   currencySelector: {
@@ -201,19 +291,23 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.grey_deep,
     borderRadius: theme.radius.md,
     padding: wp(3),
-    marginBottom: hp(3),
-    width: wp(80),
+    width: wp(38),
     backgroundColor: theme.colors.grey_deep_2,
   },
   currencySelectorText: {
     fontSize: wp(4.5),
     color: theme.colors.white,
   },
+  swapButton: {
+    backgroundColor: theme.colors.grey_deep_2,
+    padding: wp(2),
+    borderRadius: theme.radius.xl,
+  },
   amountContainer: {
     flexDirection: "row",
     alignItems: "center",
     marginBottom: hp(3),
-    width: wp(80),
+    width: wp(90),
   },
   currencySymbol: {
     fontSize: wp(6),
@@ -230,12 +324,21 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.grey_deep_2,
   },
+  rateText: {
+    fontSize: wp(4.5),
+    color: theme.colors.white,
+    marginBottom: hp(1),
+  },
   convertButton: {
     backgroundColor: theme.colors.purple,
     padding: wp(4),
     borderRadius: theme.radius.md,
-    width: wp(80),
+    width: wp(90),
     alignItems: "center",
+    marginTop: hp(3),
+  },
+  disabledButton: {
+    backgroundColor: theme.colors.grey_deep,
   },
   convertButtonText: {
     color: theme.colors.white,
@@ -246,28 +349,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "flex-end",
     backgroundColor: theme.colors.neutral(0.5),
-    width: "100%", // Full screen width
   },
   modalContent: {
     backgroundColor: theme.colors.grey_deep,
     borderTopLeftRadius: theme.radius.lg,
     borderTopRightRadius: theme.radius.lg,
     padding: wp(5),
-    maxHeight: hp(50),
-    width: "100%", // Full screen width
+    maxHeight: hp(60),
   },
   modalTitle: {
-    fontSize: wp(5),
+    fontSize: wp(6),
     fontWeight: theme.fontWeights.bold,
     color: theme.colors.white,
     marginBottom: hp(2),
+    textAlign: "center",
   },
   image: {
-    width: 100,
-    height: 100,
+    width: wp(25),
+    height: wp(25),
     marginBottom: hp(2),
-    marginLeft: 10,
-    alignSelf: "center", // Center the image
+    alignSelf: "center",
   },
   currencyItem: {
     padding: wp(4),
@@ -283,27 +384,28 @@ const styles = StyleSheet.create({
     justifyContent: "flex-end",
     alignItems: "center",
     backgroundColor: theme.colors.neutral(0.5),
-    width: "100%", // Full screen width
   },
   pinModalContent: {
     backgroundColor: theme.colors.grey_deep,
-    borderRadius: theme.radius.lg,
+    borderTopLeftRadius: theme.radius.lg,
+    borderTopRightRadius: theme.radius.lg,
     padding: wp(5),
-    width: "100%", // Full screen width
+    width: "100%",
     alignItems: "center",
   },
-
   pinInput: {
     borderWidth: 1,
     borderColor: theme.colors.grey_deep,
     borderRadius: theme.radius.md,
     padding: wp(3),
-    fontSize: wp(4.5),
+    fontSize: 24,
     color: theme.colors.white,
     backgroundColor: theme.colors.grey_deep_2,
     width: wp(70),
     marginBottom: hp(3),
     textAlign: "center",
+    letterSpacing: 10,
+    fontWeight: theme.fontWeights.bold,
   },
   submitButton: {
     backgroundColor: theme.colors.purple,
