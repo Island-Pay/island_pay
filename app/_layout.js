@@ -1,7 +1,7 @@
 import { QueryClient } from "@tanstack/react-query";
 import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
 import { createSyncStoragePersister } from "@tanstack/query-sync-storage-persister";
-import { Stack } from "expo-router";
+import { Stack } from "expo-router/stack";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -28,7 +28,13 @@ export default function Layout() {
         screenOptions={{
           headerShown: false,
         }}
-      />
+      >
+        {/* <Stack.Screen
+          name="auth/verifyOtp"
+          component={VerifyOtp}
+          options={{ headerShown: false }}
+        /> */}
+      </Stack>
     </PersistQueryClientProvider>
   );
 }

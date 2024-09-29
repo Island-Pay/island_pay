@@ -4,32 +4,78 @@ import {
   Text,
   TextInput,
   StyleSheet,
-  Pressable,
   KeyboardAvoidingView,
   Platform,
   ScrollView,
   TouchableOpacity,
+  Alert,
+  Pressable, // Add this import
 } from "react-native";
 import { theme } from "../../constants/theme";
 import { hp, wp } from "../../helpers/common";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Feather from "@expo/vector-icons/Feather";
-import FontAwesome5 from "@expo/vector-icons/FontAwesome5";
-import Animated, {
-  FadeInLeft,
-  FadeInRight,
-  FadeInUp,
-} from "react-native-reanimated";
-import { router } from "expo-router";
+import Animated, { FadeInLeft, FadeInRight, FadeInUp } from "react-native-reanimated";
+import { useRouter } from "expo-router";
+import { useLogin, useUserData } from "../apiCall/apiCall";
+import { useQueryClient } from "@tanstack/react-query";
+import { LinearGradient } from "expo-linear-gradient";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const router = useRouter();
+  const loginMutation = useLogin();
+  const queryClient = useQueryClient();
+
+  const validateInputs = () => {
+    if (!email.trim()) {
+      Alert.alert("Error", "Please enter your email address.");
+      return false;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      Alert.alert("Error", "Please enter a valid email address.");
+      return false;
+    }
+    if (!password.trim()) {
+      Alert.alert("Error", "Please enter your password.");
+      return false;
+    }
+    if (password.length < 6) {
+      Alert.alert("Error", "Password must be at least 6 characters long.");
+      return false;
+    }
+    return true;
+  };
 
   const handleSubmit = () => {
-    console.log("Email:", email);
-    console.log("Password:", password);
+    if (validateInputs()) {
+      loginMutation.mutate(
+        { email, password },
+        {
+          onSuccess: (data) => {
+            if (data.Access) {
+              handleLoginSteps(data.Data.LoginSteps);
+            } else {
+              Alert.alert("Error", data.Error || "Login failed. Please try again.");
+            }
+          },
+        }
+      );
+    }
+  };
+
+  const handleLoginSteps = (steps) => {
+    if (!steps.emailVerify) {
+      router.push("auth/verifyOtp", { type: 'email' });
+    } else if (!steps.phoneNoVerify) {
+      router.push("auth/verifyOtp", { type: 'phone' });
+    } else if (!steps.UserDetails) {
+      router.push("auth/userDetails");
+    } else {
+      router.push("dashboard");
+    }
   };
 
   const handleForgotPassword = () => {
@@ -41,122 +87,99 @@ const SignIn = () => {
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
-      <ScrollView contentContainerStyle={styles.scrollView}>
-        <Animated.Image
-          entering={FadeInLeft.duration(700)}
-          source={require("../../assets/images/!slandPay.png")}
-          style={styles.title}
-        />
-        <View style={styles.formCon}>
-          <Animated.Text
-            entering={FadeInLeft.duration(900)}
-            style={styles.header}
-          >
-            Sign in
-          </Animated.Text>
-          <View style={styles.inputGroup}>
-            <Animated.View
-              entering={FadeInLeft.duration(1000)}
-              style={styles.inputWrapper}
-            >
-              <TextInput
-                style={styles.input}
-                value={email}
-                onChangeText={setEmail}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoCorrect={false}
-                required
-                placeholder="Email..."
-                placeholderTextColor={theme.colors.grey_deep_2}
-              />
-              <MaterialCommunityIcons
-                name="email-variant"
-                size={24}
-                color={theme.colors.grey_deep_2}
-                style={styles.icon}
-              />
-            </Animated.View>
-          </View>
-          <View style={styles.inputGroup}>
-            <Animated.View
-              entering={FadeInLeft.duration(1100)}
-              style={styles.inputWrapper}
-            >
-              <TextInput
-                style={styles.input}
-                value={password}
-                onChangeText={setPassword}
-                required
-                placeholder="Password"
-                placeholderTextColor={theme.colors.grey_deep_2}
-                secureTextEntry={!showPassword}
-              />
-              <Feather
-                name={showPassword ? "eye-off" : "eye"}
-                size={24}
-                color={theme.colors.grey_deep_2}
-                onPress={() => setShowPassword(!showPassword)}
-                style={styles.icon}
-              />
-            </Animated.View>
-            <TouchableOpacity
-              onPress={handleForgotPassword}
-              style={styles.forgotPassword}
-            >
-              <Animated.Text
-                entering={FadeInRight.duration(1100)}
-                style={styles.forgotPasswordText}
+      <LinearGradient
+        colors={[theme.colors.black, theme.colors.purple_dark]}
+        style={styles.gradient}
+      >
+        <ScrollView contentContainerStyle={styles.scrollView}>
+          <View style={styles.contentWrapper}>
+            <Animated.Image
+              entering={FadeInLeft.duration(700)}
+              source={require("../../assets/images/!slandPay.png")}
+              style={styles.logo}
+            />
+            <View style={styles.formCon}>
+              <View style={styles.inputGroup}>
+                <Animated.View
+                  entering={FadeInLeft.duration(1000)}
+                  style={styles.inputWrapper}
+                >
+                  <TextInput
+                    style={styles.input}
+                    value={email}
+                    onChangeText={setEmail}
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    required
+                    placeholder="Email"
+                    placeholderTextColor={theme.colors.grey_deep_2}
+                  />
+                  <MaterialCommunityIcons
+                    name="email-variant"
+                    size={28}
+                    color={theme.colors.purple_light}
+                    style={styles.icon}
+                  />
+                </Animated.View>
+              </View>
+              <View style={styles.inputGroup}>
+                <Animated.View
+                  entering={FadeInLeft.duration(1100)}
+                  style={styles.inputWrapper}
+                >
+                  <TextInput
+                    style={styles.input}
+                    value={password}
+                    onChangeText={setPassword}
+                    required
+                    placeholder="Password"
+                    placeholderTextColor={theme.colors.grey_deep_2}
+                    secureTextEntry={!showPassword}
+                  />
+                  <Feather
+                    name={showPassword ? "eye-off" : "eye"}
+                    size={28}
+                    color={theme.colors.purple_light}
+                    onPress={() => setShowPassword(!showPassword)}
+                    style={styles.icon}
+                  />
+                </Animated.View>
+              </View>
+              <TouchableOpacity
+                onPress={handleForgotPassword}
+                style={styles.forgotPassword}
               >
-                Forgot Password?
-              </Animated.Text>
-            </TouchableOpacity>
+                <Animated.Text
+                  entering={FadeInRight.duration(1100)}
+                  style={styles.forgotPasswordText}
+                >
+                  Forgot Password?
+                </Animated.Text>
+              </TouchableOpacity>
+              <Animated.View
+                style={styles.buttonWrapper}
+                entering={FadeInUp.duration(1200)}
+              >
+                <TouchableOpacity style={styles.signInBtn} onPress={handleSubmit}>
+                  <Text style={styles.signInText}>Sign In</Text>
+                </TouchableOpacity>
+              </Animated.View>
+              <Pressable onPress={() => router.push("auth/signUp")}>
+                <Animated.View
+                  entering={FadeInUp.duration(1500)}
+                  style={styles.alreadyHaveAccount}
+                >
+                  <Text style={styles.alreadyHaveAccountText}>
+                    Don't have an account?{" "}
+                    <Text style={styles.signUpLink}>Sign up</Text>
+                  </Text>
+                </Animated.View>
+              </Pressable>
+            </View>
           </View>
-          <Animated.View
-            style={{ width: "100%" }}
-            entering={FadeInUp.duration(1200)}
-          >
-            <TouchableOpacity style={styles.signInBtn} onPress={handleSubmit}>
-              {/* <MaterialCommunityIcons
-                name="email-variant"
-                size={24}
-                color={theme.colors.white}
-                style={styles.signInIcon}
-              /> */}
-              <Text style={styles.signInText}>Sign In</Text>
-            </TouchableOpacity>
-          </Animated.View>
-          <Animated.View
-            entering={FadeInUp.duration(1300)}
-            style={styles.signInOptions}
-          >
-            <Text style={styles.optionText}>Or sign in with</Text>
-          </Animated.View>
-          <Animated.View
-            entering={FadeInUp.duration(1400)}
-            style={styles.iconContainer}
-          >
-            <TouchableOpacity style={styles.socialSignInIcon}>
-              <FontAwesome5
-                name="google"
-                size={20}
-                color={theme.colors.grey_deep_2}
-              />
-            </TouchableOpacity>
-          </Animated.View>
-          <Pressable onPress={() => router.push("auth/signUp")}>
-            <Animated.View
-              entering={FadeInUp.duration(1500)}
-              style={styles.alreadyHaveAccount}
-            >
-              <Text style={styles.alreadyHaveAccountText}>
-                Don't have an account?{" "}
-                <Text style={styles.signUpLink}>Sign up</Text>
-              </Text>
-            </Animated.View>
-          </Pressable>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </LinearGradient>
     </KeyboardAvoidingView>
   );
 };
@@ -164,41 +187,41 @@ const SignIn = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: theme.colors.black,
-    ...Platform.select({
-      web: {
-        justifyContent: "center",
-        alignItems: "center",
-      },
-    }),
+  },
+  gradient: {
+    flex: 1,
   },
   scrollView: {
     flexGrow: 1,
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingTop: Platform.OS === "web" ? "3rem" : hp(2),
-    paddingBottom: hp(3),
   },
-  title: {
+  contentWrapper: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: wp(5),
+    paddingVertical: hp(6),
+  },
+  logo: {
     width: wp(30),
     height: wp(30),
     resizeMode: "contain",
-    marginTop: hp(2),
+    marginBottom: hp(6),
   },
   formCon: {
-    width: wp(80),
+    width: "100%",
+    maxWidth: 400,
     alignItems: "center",
   },
   header: {
     fontSize: 32,
     color: theme.colors.white,
-    marginBottom: hp(3),
+    marginBottom: hp(4),
     fontWeight: "bold",
     alignSelf: "flex-start",
   },
   inputGroup: {
     width: "100%",
-    marginBottom: hp(2),
+    marginBottom: hp(3),
   },
   inputWrapper: {
     width: "100%",
@@ -206,71 +229,47 @@ const styles = StyleSheet.create({
   },
   input: {
     width: "100%",
-    padding: hp(1.5),
-    backgroundColor: theme.colors.grey_deep,
-    borderRadius: theme.radius.sm,
+    padding: hp(2),
+    backgroundColor: 'rgba(255, 255, 255, 0.15)', // Slightly increased opacity
+    borderRadius: theme.radius.md,
     color: theme.colors.white,
-    borderColor: "#454545",
-    borderWidth: 1,
-    paddingRight: wp(12),
-    fontSize: Platform.OS === "web" ? "1rem" : 16,
+    fontSize: 16,
+    paddingRight: wp(14), // Increased to accommodate larger icon
   },
   icon: {
     position: "absolute",
     right: wp(4),
     top: "50%",
-    transform: [{ translateY: -12 }],
+    transform: [{ translateY: -14 }], // Adjusted for larger icon size
   },
   forgotPassword: {
-    alignSelf: "flex-end",
-    marginTop: hp(1),
+    alignSelf: "center", // Change from "flex-end" to "center"
+    marginBottom: hp(2), // Reduced from hp(4)
+    marginTop: hp(1), // Add some top margin
   },
   forgotPasswordText: {
-    color: theme.colors.grey_clean,
-    fontSize: 14,
-    textDecorationLine: "underline",
+    color: theme.colors.white, // Change to white for better visibility
+    fontSize: 14, // Reduced from 16
+    textDecorationLine: 'underline',
+    fontWeight: '500', // Reduced from '600'
+  },
+  buttonWrapper: {
+    width: "100%",
+    marginBottom: hp(4),
   },
   signInBtn: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: theme.colors.purple,
-    paddingVertical: Platform.OS === "web" ? "1.5rem" : hp(2),
+    paddingVertical: hp(2),
     borderRadius: theme.radius.md,
-    marginTop: hp(2),
     width: "100%",
-  },
-  signInIcon: {
-    marginRight: wp(2),
   },
   signInText: {
     color: theme.colors.white,
-    fontSize: Platform.OS === "web" ? "1.25rem" : 18,
+    fontSize: 18,
     fontWeight: "bold",
-  },
-  signInOptions: {
-    marginTop: hp(3),
-    alignItems: "center",
-  },
-  optionText: {
-    color: theme.colors.grey_clean,
-    fontSize: Platform.OS === "web" ? "1rem" : 16,
-    marginBottom: hp(2),
-  },
-  iconContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    width: "100%",
-    marginBottom: hp(3),
-  },
-  socialSignInIcon: {
-    backgroundColor: theme.colors.grey_deep,
-    padding: hp(1.5),
-    borderRadius: 10,
-    width: wp(12),
-    height: wp(12),
-    justifyContent: "center",
-    alignItems: "center",
   },
   alreadyHaveAccount: {
     alignItems: "center",
@@ -280,8 +279,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   signUpLink: {
-    color: theme.colors.purple,
-    textDecorationLine: "underline",
+    color: theme.colors.purple_light,
   },
 });
 
