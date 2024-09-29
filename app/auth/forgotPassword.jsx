@@ -1,6 +1,14 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { theme } from "../../constants/theme";
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState("");
@@ -15,7 +23,10 @@ export default function ForgotPassword() {
       return;
     }
     // TODO: Implement password reset logic here
-    Alert.alert("Success", "If an account exists for this email, you will receive password reset instructions.");
+    Alert.alert(
+      "Success",
+      "If an account exists for this email, you will receive password reset instructions."
+    );
   };
 
   return (

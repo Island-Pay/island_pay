@@ -9,6 +9,7 @@ import {
   Pressable,
   SafeAreaView,
   StatusBar,
+  ActivityIndicator
 } from "react-native";
 import { FontAwesome5, MaterialCommunityIcons } from "@expo/vector-icons";
 import { theme } from "../../constants/theme";

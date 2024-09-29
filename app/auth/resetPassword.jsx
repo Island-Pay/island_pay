@@ -8,6 +8,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
+  ActivityIndicator,
 } from "react-native";
 import { theme } from "../../constants/theme";
 import { hp, wp } from "../../helpers/common";
@@ -22,14 +23,19 @@ const ResetPassword = () => {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = () => {
+    setLoading(true);
     console.log("OTP:", otp);
     console.log("New Password:", newPassword);
     console.log("Confirm Password:", confirmPassword);
-    // Here you would typically call an API to verify OTP and update password
-    router.push("auth/passwordResetSuccess");
+    // Simulate an API call
+    setTimeout(() => {
+      setLoading(false);
+      router.push("auth/passwordResetSuccess");
+    }, 2000);
   };
 
   return (
@@ -125,8 +131,16 @@ const ResetPassword = () => {
             style={{ width: "100%" }}
             entering={FadeInUp.duration(1400)}
           >
-            <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-              <Text style={styles.submitText}>Reset Password</Text>
+            <TouchableOpacity
+              style={styles.submitBtn}
+              onPress={handleSubmit}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator size="small" color={theme.colors.white} />
+              ) : (
+                <Text style={styles.submitText}>Reset Password</Text>
+              )}
             </TouchableOpacity>
           </Animated.View>
         </View>

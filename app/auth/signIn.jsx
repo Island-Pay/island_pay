@@ -9,13 +9,18 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
-  Pressable, // Add this import
+  Pressable,
+  ActivityIndicator,
 } from "react-native";
 import { theme } from "../../constants/theme";
 import { hp, wp } from "../../helpers/common";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 import Feather from "@expo/vector-icons/Feather";
-import Animated, { FadeInLeft, FadeInRight, FadeInUp } from "react-native-reanimated";
+import Animated, {
+  FadeInLeft,
+  FadeInRight,
+  FadeInUp,
+} from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import { useLogin, useUserData } from "../apiCall/apiCall";
 import { useQueryClient } from "@tanstack/react-query";
@@ -25,6 +30,7 @@ const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false); // Add loading state
   const router = useRouter();
   const loginMutation = useLogin();
   const queryClient = useQueryClient();
@@ -51,30 +57,42 @@ const SignIn = () => {
 
   const handleSubmit = () => {
     if (validateInputs()) {
+      setLoading(true); // Set loading to true when login starts
       loginMutation.mutate(
         { email, password },
         {
           onSuccess: (data) => {
+            setLoading(false); // Set loading to false when login ends
             if (data.Access) {
-              handleLoginSteps(data.Data.LoginSteps);
+              handleLoginSteps(data.Data.LoginSteps, data.Data.Auth);
             } else {
-              Alert.alert("Error", data.Error || "Login failed. Please try again.");
+              Alert.alert(
+                "Error",
+                data.Error || "Login failed. Please try again."
+              );
             }
+          },
+          onError: () => {
+            setLoading(false); // Set loading to false if there's an error
+            Alert.alert("Error", "Login failed. Please try again.");
           },
         }
       );
     }
   };
 
-  const handleLoginSteps = (steps) => {
+  const handleLoginSteps = (steps, auth) => {
     if (!steps.emailVerify) {
-      router.push("auth/verifyOtp", { type: 'email' });
+      router.push("auth/verifyOtp", { type: "email" });
     } else if (!steps.phoneNoVerify) {
-      router.push("auth/verifyOtp", { type: 'phone' });
+      router.push("auth/verifyOtp", { type: "phone" });
     } else if (!steps.UserDetails) {
-      router.push("auth/userDetails");
+      router.push("auth/finalSignUp");
+    } else if (auth === null) {
+      router.push("auth/setupPin");
+      console.log(auth);
     } else {
-      router.push("dashboard");
+      router.push("dashboard/home");
     }
   };
 
@@ -161,8 +179,19 @@ const SignIn = () => {
                 style={styles.buttonWrapper}
                 entering={FadeInUp.duration(1200)}
               >
-                <TouchableOpacity style={styles.signInBtn} onPress={handleSubmit}>
-                  <Text style={styles.signInText}>Sign In</Text>
+                <TouchableOpacity
+                  style={styles.signInBtn}
+                  onPress={handleSubmit}
+                  disabled={loading} // Disable button when loading
+                >
+                  {loading ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={theme.colors.white}
+                    />
+                  ) : (
+                    <Text style={styles.signInText}>Sign In</Text>
+                  )}
                 </TouchableOpacity>
               </Animated.View>
               <Pressable onPress={() => router.push("auth/signUp")}>
@@ -230,28 +259,28 @@ const styles = StyleSheet.create({
   input: {
     width: "100%",
     padding: hp(2),
-    backgroundColor: 'rgba(255, 255, 255, 0.15)', // Slightly increased opacity
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
     borderRadius: theme.radius.md,
     color: theme.colors.white,
     fontSize: 16,
-    paddingRight: wp(14), // Increased to accommodate larger icon
+    paddingRight: wp(14),
   },
   icon: {
     position: "absolute",
     right: wp(4),
     top: "50%",
-    transform: [{ translateY: -14 }], // Adjusted for larger icon size
+    transform: [{ translateY: -14 }],
   },
   forgotPassword: {
-    alignSelf: "center", // Change from "flex-end" to "center"
-    marginBottom: hp(2), // Reduced from hp(4)
-    marginTop: hp(1), // Add some top margin
+    alignSelf: "center",
+    marginBottom: hp(2),
+    marginTop: hp(1),
   },
   forgotPasswordText: {
-    color: theme.colors.white, // Change to white for better visibility
-    fontSize: 14, // Reduced from 16
-    textDecorationLine: 'underline',
-    fontWeight: '500', // Reduced from '600'
+    color: theme.colors.white,
+    fontSize: 14,
+    textDecorationLine: "underline",
+    fontWeight: "500",
   },
   buttonWrapper: {
     width: "100%",

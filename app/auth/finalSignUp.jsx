@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -8,28 +8,32 @@ import {
   Platform,
   ScrollView,
   TouchableOpacity,
-} from 'react-native';
-import { theme } from '../../constants/theme';
-import { hp, wp } from '../../helpers/common';
-import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import Animated, { FadeInLeft, FadeInUp } from 'react-native-reanimated';
-import { useRouter } from 'expo-router';
-import DateTimePicker from '@react-native-community/datetimepicker';
-import useUserStore from '../../store/userStore';
+  ActivityIndicator,
+} from "react-native";
+import { theme } from "../../constants/theme";
+import { hp, wp } from "../../helpers/common";
+import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
+import Animated, { FadeInLeft, FadeInUp } from "react-native-reanimated";
+import { useRouter } from "expo-router";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { useRegisterUserDetails } from "../apiCall/apiCall";
+import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
 
 const FinalSignUp = () => {
   const [dateOfBirth, setDateOfBirth] = useState(new Date());
-  const [address, setAddress] = useState('');
-  const [city, setCity] = useState('');
-  const [state, setState] = useState('');
-  const [country, setCountry] = useState('');
-  const [zipCode, setZipCode] = useState('');
+  const [address, setAddress] = useState("");
+  const [city, setCity] = useState("");
+  const [state, setState] = useState("");
+  const [country, setCountry] = useState("");
+  const [zipCode, setZipCode] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
+  const [loading, setLoading] = useState(false); // Add loading state
 
   const router = useRouter();
-  const setUser = useUserStore((state) => state.setUser);
+  const { mutate: registerUserDetails } = useRegisterUserDetails();
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
+    setLoading(true); // Set loading to true when submission starts
     const userData = {
       dateOfBirth,
       address,
@@ -38,28 +42,47 @@ const FinalSignUp = () => {
       country,
       zipCode,
     };
-    // Here you would typically send this data to your backend
-    console.log(userData);
-    // Update the global state
-    setUser(userData);
-    router.push('auth/setupPin');
+
+    try {
+      const email = await AsyncStorage.getItem("email");
+      if (email !== null) {
+        registerUserDetails(
+          { userData, email },
+          {
+            onSuccess: () => {
+              setLoading(false); // Set loading to false when submission is successful
+              router.push("auth/setupPin");
+            },
+            onError: () => {
+              setLoading(false); // Set loading to false when there's an error
+            },
+          }
+        );
+      } else {
+        console.error("Email not found in AsyncStorage");
+        setLoading(false); // Set loading to false if email is not found
+      }
+    } catch (error) {
+      console.error("Error retrieving email from AsyncStorage:", error);
+      setLoading(false); // Set loading to false if there's an error
+    }
   };
 
   const onDateChange = (event, selectedDate) => {
     const currentDate = selectedDate || dateOfBirth;
-    setShowDatePicker(Platform.OS === 'ios');
+    setShowDatePicker(Platform.OS === "ios");
     setDateOfBirth(currentDate);
   };
 
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollView}>
         <Animated.Image
           entering={FadeInLeft.duration(700)}
-          source={require('../../assets/images/!slandPay.png')}
+          source={require("../../assets/images/!slandPay.png")}
           style={styles.title}
         />
         <View style={styles.formCon}>
@@ -76,7 +99,10 @@ const FinalSignUp = () => {
             Please provide the following details to complete your registration
           </Animated.Text>
 
-          <TouchableOpacity onPress={() => setShowDatePicker(true)} style={styles.inputGroup}>
+          <TouchableOpacity
+            onPress={() => setShowDatePicker(true)}
+            style={styles.inputGroup}
+          >
             <Text style={styles.label}>Date of Birth</Text>
             <Text style={styles.dateText}>{dateOfBirth.toDateString()}</Text>
           </TouchableOpacity>
@@ -147,20 +173,27 @@ const FinalSignUp = () => {
           </View>
 
           <Animated.View
-            style={{ width: '100%' }}
+            style={{ width: "100%" }}
             entering={FadeInUp.duration(1600)}
           >
             <TouchableOpacity
               style={styles.submitBtn}
               onPress={handleSubmit}
+              disabled={loading}
             >
-              <MaterialCommunityIcons
-                name="check-circle"
-                size={24}
-                color={theme.colors.white}
-                style={styles.submitIcon}
-              />
-              <Text style={styles.submitText}>Complete Sign Up</Text>
+              {loading ? (
+                <ActivityIndicator size="small" color={theme.colors.white} />
+              ) : (
+                <>
+                  <MaterialCommunityIcons
+                    name="check-circle"
+                    size={24}
+                    color={theme.colors.white}
+                    style={styles.submitIcon}
+                  />
+                  <Text style={styles.submitText}>Complete Sign Up</Text>
+                </>
+              )}
             </TouchableOpacity>
           </Animated.View>
         </View>
@@ -176,34 +209,34 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingVertical: hp(3),
   },
   title: {
     width: wp(30),
     height: wp(30),
-    resizeMode: 'contain',
+    resizeMode: "contain",
     marginBottom: hp(4),
   },
   formCon: {
     width: wp(80),
-    alignItems: 'center',
+    alignItems: "center",
   },
   header: {
     fontSize: 32,
     color: theme.colors.white,
     marginBottom: hp(2),
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   subHeader: {
     fontSize: 16,
     color: theme.colors.grey_clean,
     marginBottom: hp(4),
-    textAlign: 'center',
+    textAlign: "center",
   },
   inputGroup: {
-    width: '100%',
+    width: "100%",
     marginBottom: hp(2),
   },
   label: {
@@ -211,12 +244,12 @@ const styles = StyleSheet.create({
     marginBottom: hp(1),
   },
   input: {
-    width: '100%',
+    width: "100%",
     padding: hp(1.5),
     backgroundColor: theme.colors.grey_deep,
     borderRadius: theme.radius.sm,
     color: theme.colors.white,
-    borderColor: '#454545',
+    borderColor: "#454545",
     borderWidth: 1,
     fontSize: 16,
   },
@@ -226,18 +259,18 @@ const styles = StyleSheet.create({
     padding: hp(1.5),
     backgroundColor: theme.colors.grey_deep,
     borderRadius: theme.radius.sm,
-    borderColor: '#454545',
+    borderColor: "#454545",
     borderWidth: 1,
   },
   submitBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     backgroundColor: theme.colors.purple,
     paddingVertical: hp(2),
     borderRadius: theme.radius.md,
     marginTop: hp(2),
-    width: '100%',
+    width: "100%",
   },
   submitIcon: {
     marginRight: wp(2),
@@ -245,7 +278,7 @@ const styles = StyleSheet.create({
   submitText: {
     color: theme.colors.white,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
 });
 

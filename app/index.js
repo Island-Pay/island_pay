@@ -107,7 +107,7 @@ const WelcomeScreen = () => {
           {/* Animated sign-in text */}
           <Animated.View style={[styles.signInCon, { opacity: fadeAnimText }]}>
             <Text style={styles.signInOut}>Already have an account?</Text>
-            <Pressable onPress={() => router.push("dashboard/home")}>
+            <Pressable onPress={() => router.push("auth/signIn")}>
               <Text style={styles.signIntext}>Sign in</Text>
             </Pressable>
           </Animated.View>

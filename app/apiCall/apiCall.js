@@ -38,7 +38,7 @@ const getDepositLink = async ({ currency, amount }) => {
     { amount },
     {
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${await getAuthToken()}`,
       },
     }
   );
@@ -50,7 +50,7 @@ const getRate = async ({ from, to }) => {
   const response = await api.get(`/convert/get-rate`, {
     params: { from, to },
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${await getAuthToken()}`,
     },
   });
   return response.data;
@@ -63,7 +63,7 @@ const convertMoney = async ({ from, to, pin, amount }) => {
     { from, to, pin, amount },
     {
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${await getAuthToken()}`,
       },
     }
   );
@@ -81,7 +81,7 @@ const sendMoney = async ({ currency, amount, receiver, pin }) => {
     {
       params: { currency },
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${await getAuthToken()}`,
         "Content-Type": "application/json",
       },
     }
@@ -92,11 +92,40 @@ const sendMoney = async ({ currency, amount, receiver, pin }) => {
 const getWalletDetails = async () => {
   const response = await api.get(`/wallet/details`, {
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${await getAuthToken()}`,
+    },
+  });
+  console.log();
+  return response.data;
+};
+
+const registerUserDetails = async (userData, email) => {
+  const response = await api.post(`/register/userdetails`, userData, {
+    params: { email },
+    headers: {
+      Authorization: `Bearer ${await getAuthToken()}`,
+      "Content-Type": "application/json",
     },
   });
   return response.data;
 };
+
+const registerPin = async ({ email, pin }) => {
+  const response = await api.post(
+    `/register/verify/pin`,
+    { pin },
+    {
+      params: { email },
+      headers: {
+        Authorization: `Bearer ${await getAuthToken()}`,
+        "Content-Type": "application/json",
+      },
+    }
+  );
+  return response.data;
+};
+
+// exports
 
 export const useGetDepositLink = () => {
   return useMutation({
@@ -146,6 +175,26 @@ export const useSignUpMutation = () => {
     onSuccess: (data, variables) => {
       // Update the user data in the cache
       queryClient.setQueryData(["user"], variables);
+      AsyncStorage.setItem("email", data.Data.email || "");
+    },
+  });
+};
+
+export const useRegisterUserDetails = () => {
+  return useMutation({
+    mutationFn: ({ userData, email }) => registerUserDetails(userData, email),
+    onSuccess: (data) => {
+      if (data.Access) {
+        console.log("User details registered successfully:", data.Data);
+      } else {
+        console.error("Failed to register user details:", data.Error);
+      }
+    },
+    onError: (error) => {
+      console.error(
+        "Error registering user details:",
+        error.response?.data || error
+      );
     },
   });
 };
@@ -254,17 +303,23 @@ export function useLogin() {
         // Save the entire user data in the cache
         queryClient.setQueryData(["user"], data.Data);
 
+        console.log("Login successful:", data.Data);
+
         try {
           // Save the auth token in AsyncStorage
           await AsyncStorage.setItem("authToken", data.Data.Auth || "");
+
+          await AsyncStorage.setItem("email", data.Data.Email || "");
 
           // Invalidate and refetch user data
           queryClient.invalidateQueries(["user"]);
 
           // Navigate to the dashboard or home screen
-          router.replace("/dashboard");
         } catch (error) {
-          console.error("Error saving login information:", error);
+          console.error(
+            "Error saving login information:",
+            error.response?.data
+          );
           Alert.alert(
             "Login Error",
             "Failed to save login information. Please try again."
@@ -278,7 +333,7 @@ export function useLogin() {
       }
     },
     onError: (error) => {
-      console.error("Login error:", error.response?.data || error);
+      console.error("Login error:", error);
       Alert.alert(
         "Login Failed",
         "Please check your credentials and try again."
@@ -323,4 +378,20 @@ export const getMobileMoney = async (country) => {
     },
   });
   return response.data.Banks;
+};
+
+export const useRegisterPin = () => {
+  return useMutation({
+    mutationFn: registerPin,
+    onSuccess: (data) => {
+      if (data.Access && data.updated) {
+        console.log("Pin registered successfully", data);
+      } else {
+        console.error("Failed to register pin:", data.Error);
+      }
+    },
+    onError: (error) => {
+      console.error("Error registering pin:", error.response?.data || error);
+    },
+  });
 };

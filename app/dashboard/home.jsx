@@ -8,6 +8,7 @@ import {
   Platform,
   StatusBar,
   Image,
+  ActivityIndicator,
 } from "react-native";
 import { Link, useRouter } from "expo-router";
 import { theme } from "../../constants/theme";
@@ -18,7 +19,6 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withSpring,
-  withClamp,
   runOnJS,
 } from "react-native-reanimated";
 import { useGetWalletDetails } from "../apiCall/apiCall";
@@ -140,7 +140,11 @@ const DashboardScreen = () => {
         {Platform.OS !== "web" && (
           <StatusBar style="light" backgroundColor={theme.colors.purple} />
         )}
-        {isLoading && <Text>Loading...</Text>}
+        {isLoading && (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.purple} />
+          </View>
+        )}
         {error && <Text>Error: {error.message}</Text>}
 
         {data && selectedAccount && (
@@ -250,37 +254,41 @@ const DashboardScreen = () => {
                   </Text>
                 </TouchableOpacity>
               </View>
-              <View style={styles.transactionItem}>
-                <Ionicons
-                  name={
-                    data.Balance.Transactions[0].type === "Credit"
-                      ? "arrow-up"
-                      : "arrow-down"
-                  }
-                  size={24}
-                  color={
-                    data.Balance.Transactions[0].type === "Credit"
-                      ? "green"
-                      : "red"
-                  }
-                />
-                <View style={styles.transactionDetails}>
-                  <Text style={styles.transactionName}>
-                    {data.Balance.Transactions[0].naration}
-                  </Text>
-                  <Text style={styles.transactionSubtext}>
-                    {data.Balance.Transactions[0].type} •{" "}
-                    {new Date(
-                      data.Balance.Transactions[0].createdAt
-                    ).toLocaleString()}
+              {data?.Balance?.Transactions?.length > 0 ? (
+                <View style={styles.transactionItem}>
+                  <Ionicons
+                    name={
+                      data?.Balance?.Transactions[0]?.type === "Credit"
+                        ? "arrow-up"
+                        : "arrow-down"
+                    }
+                    size={24}
+                    color={
+                      data?.Balance?.Transactions[0]?.type === "Credit"
+                        ? "green"
+                        : "red"
+                    }
+                  />
+                  <View style={styles.transactionDetails}>
+                    <Text style={styles.transactionName}>
+                      {data?.Balance?.Transactions[0]?.naration}
+                    </Text>
+                    <Text style={styles.transactionSubtext}>
+                      {data?.Balance?.Transactions[0]?.type} •{" "}
+                      {new Date(
+                        data?.Balance?.Transactions[0]?.createdAt
+                      ).toLocaleString()}
+                    </Text>
+                  </View>
+                  <Text style={styles.transactionAmount}>
+                    {isBalanceVisible
+                      ? `${data?.Balance?.Transactions[0]?.amount.toFixed(2)}`
+                      : "****"}
                   </Text>
                 </View>
-                <Text style={styles.transactionAmount}>
-                  {isBalanceVisible
-                    ? `${data.Balance.Transactions[0].amount.toFixed(2)}`
-                    : "****"}
-                </Text>
-              </View>
+              ) : (
+                <Text style={styles.transactionSubtext}>No transactions</Text>
+              )}
             </View>
 
             <View style={styles.recommendedContainer}>
@@ -344,6 +352,11 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.black,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
   },
   profileContainer: {
     padding: wp(5),

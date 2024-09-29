@@ -2,33 +2,37 @@ import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
-  TouchableOpacity,
+  StyleSheet,
   Platform,
+  TouchableOpacity,
   Image,
   Alert,
+  ActivityIndicator,
 } from "react-native";
 import { theme } from "../../constants/theme";
 import { hp, wp } from "../../helpers/common";
 import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import useUserStore from '../../store/userStore';
+import { useRegisterPin } from "../apiCall/apiCall"; // Adjust the import path as necessary
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SetupPin = () => {
   const router = useRouter();
   const [pin, setPin] = useState(["", "", "", ""]);
   const [confirmPin, setConfirmPin] = useState(["", "", "", ""]);
   const [isPinConfirmationMode, setIsPinConfirmationMode] = useState(false);
+  const [loading, setLoading] = useState(false);
   const inputRefs = useRef([]);
   const confirmInputRefs = useRef([]);
-
-  const updateUser = useUserStore((state) => state.updateUser);
+  const { mutate: registerPin } = useRegisterPin();
 
   useEffect(() => {
     // Focus the first input when the component mounts
-    inputRefs.current[0].focus();
+    if (inputRefs.current[0]) {
+      inputRefs.current[0].focus();
+    }
   }, []);
 
   const handlePinChange = (text, index, isConfirmPin = false) => {
@@ -39,11 +43,15 @@ const SetupPin = () => {
 
       // Move to next input if current input is filled
       if (text.length > 0 && index < 3) {
-        (isConfirmPin ? confirmInputRefs : inputRefs).current[
-          index + 1
-        ].focus();
+        if ((isConfirmPin ? confirmInputRefs : inputRefs).current[index + 1]) {
+          (isConfirmPin ? confirmInputRefs : inputRefs).current[
+            index + 1
+          ].focus();
+        }
       } else if (index === 3 && text.length > 0) {
-        (isConfirmPin ? confirmInputRefs : inputRefs).current[index].blur();
+        if ((isConfirmPin ? confirmInputRefs : inputRefs).current[index]) {
+          (isConfirmPin ? confirmInputRefs : inputRefs).current[index].blur();
+        }
       }
     }
   };
@@ -52,42 +60,66 @@ const SetupPin = () => {
     if (e.nativeEvent.key === "Backspace") {
       const currentPin = isConfirmPin ? confirmPin : pin;
       if (currentPin[index] === "" && index > 0) {
-        // Move to previous input if current is empty
-        (isConfirmPin ? confirmInputRefs : inputRefs).current[
-          index - 1
-        ].focus();
-      } else {
-        // Clear current input
-        const newPin = [...currentPin];
-        newPin[index] = "";
-        isConfirmPin ? setConfirmPin(newPin) : setPin(newPin);
+        if ((isConfirmPin ? confirmInputRefs : inputRefs).current[index - 1]) {
+          (isConfirmPin ? confirmInputRefs : inputRefs).current[
+            index - 1
+          ].focus();
+        }
       }
     }
   };
 
-  const handleContinue = () => {
+  const handleSubmit = () => {
     if (pin.every((digit) => digit !== "")) {
       setIsPinConfirmationMode(true);
-      // Focus the first confirmation input after a short delay
-      setTimeout(() => confirmInputRefs.current[0].focus(), 100);
+      if (confirmInputRefs.current[0]) {
+        confirmInputRefs.current[0].focus();
+      }
+    } else {
+      Alert.alert("Incomplete PIN", "Please enter a 4-digit PIN.");
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (confirmPin.every((digit) => digit !== "")) {
       if (pin.join("") === confirmPin.join("")) {
-        // Here you would typically save the PIN securely
-        // Update the global state with the PIN (in a real app, never store the PIN directly)
-        updateUser({ pin: pin.join("") });
-        router.push("dashboard/home");
+        try {
+          setLoading(true);
+          const email = await AsyncStorage.getItem("email");
+          if (email) {
+            registerPin(
+              { email, pin: pin.join("") },
+              {
+                onSuccess: () => {
+                  setLoading(false);
+                  router.push("dashboard/home");
+                },
+                onError: () => {
+                  setLoading(false);
+                  Alert.alert("Error", "Failed to register PIN.");
+                },
+              }
+            );
+          } else {
+            setLoading(false);
+            Alert.alert("Error", "User email not found.");
+          }
+        } catch (error) {
+          setLoading(false);
+          Alert.alert("Error", "Failed to retrieve user email.");
+        }
       } else {
         Alert.alert(
           "PIN Mismatch",
           "The PINs you entered do not match. Please try again."
         );
         setConfirmPin(["", "", "", ""]);
-        confirmInputRefs.current[0].focus();
+        if (confirmInputRefs.current[0]) {
+          confirmInputRefs.current[0].focus();
+        }
       }
+    } else {
+      Alert.alert("Incomplete PIN", "Please re-enter your 4-digit PIN.");
     }
   };
 
@@ -142,11 +174,11 @@ const SetupPin = () => {
         <Animated.View entering={FadeInUp.duration(1000).delay(900)}>
           {isPinConfirmationMode
             ? renderPinInputs(
-              confirmPin,
-              confirmInputRefs,
-              (text, index) => handlePinChange(text, index, true),
-              (e, index) => handleKeyPress(e, index, true)
-            )
+                confirmPin,
+                confirmInputRefs,
+                (text, index) => handlePinChange(text, index, true),
+                (e, index) => handleKeyPress(e, index, true)
+              )
             : renderPinInputs(pin, inputRefs, handlePinChange, handleKeyPress)}
         </Animated.View>
         <Animated.View
@@ -157,27 +189,33 @@ const SetupPin = () => {
             style={[
               styles.button,
               (!isPinConfirmationMode && !pin.every((digit) => digit !== "")) ||
-                (isPinConfirmationMode &&
-                  !confirmPin.every((digit) => digit !== ""))
+              (isPinConfirmationMode &&
+                !confirmPin.every((digit) => digit !== ""))
                 ? styles.buttonDisabled
                 : null,
             ]}
-            onPress={isPinConfirmationMode ? handleConfirm : handleContinue}
+            onPress={isPinConfirmationMode ? handleConfirm : handleSubmit}
             disabled={
               (!isPinConfirmationMode && !pin.every((digit) => digit !== "")) ||
               (isPinConfirmationMode &&
                 !confirmPin.every((digit) => digit !== ""))
             }
           >
-            <MaterialCommunityIcons
-              name="lock"
-              size={24}
-              color={theme.colors.white}
-              style={styles.buttonIcon}
-            />
-            <Text style={styles.buttonText}>
-              {isPinConfirmationMode ? "Confirm PIN" : "Set PIN"}
-            </Text>
+            {loading ? (
+              <ActivityIndicator size="small" color={theme.colors.white} />
+            ) : (
+              <>
+                <MaterialCommunityIcons
+                  name="lock"
+                  size={24}
+                  color={theme.colors.white}
+                  style={styles.buttonIcon}
+                />
+                <Text style={styles.buttonText}>
+                  {isPinConfirmationMode ? "Confirm PIN" : "Set PIN"}
+                </Text>
+              </>
+            )}
           </TouchableOpacity>
         </Animated.View>
       </Animated.View>

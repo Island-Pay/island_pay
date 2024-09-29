@@ -10,7 +10,7 @@ import {
   TouchableOpacity,
   Pressable,
   Alert,
-  ActivityIndicator, // Add this import
+  ActivityIndicator,
 } from "react-native";
 import { theme } from "../../constants/theme";
 import { hp, wp } from "../../helpers/common";
@@ -21,9 +21,8 @@ import { useRouter } from "expo-router";
 import ProgressBar from "./components/ProgressBar";
 import CountrySelector from "./components/CountrySelector";
 import { useSignUpMutation, useUserData } from "../apiCall/apiCall";
-import { validateInput } from '../../helpers/inputValidation'; // We'll create this helper function
+import { validateInput } from "../../helpers/inputValidation";
 import { useQueryClient } from "@tanstack/react-query";
-
 
 const SignUp = () => {
   const queryClient = useQueryClient();
@@ -46,8 +45,9 @@ const SignUp = () => {
   const [country, setCountry] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [step, setStep] = useState(1);
-  const totalSteps = 4; // Changed from 5 to 4
+  const totalSteps = 4;
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
 
   const router = useRouter();
   const signUpMutation = useSignUpMutation();
@@ -57,7 +57,6 @@ const SignUp = () => {
     if (Object.keys(currentStepErrors).length === 0) {
       if (step < totalSteps) {
         setStep(step + 1);
-        // Save current step data to cache
         saveStepDataToCache();
       } else {
         handleSubmit();
@@ -77,13 +76,51 @@ const SignUp = () => {
       phone_number,
       country: selectedCountry?.name,
     };
-    queryClient.setQueryData(['user'], (oldData) => ({ ...oldData, ...stepData }));
+    queryClient.setQueryData(["user"], (oldData) => ({
+      ...oldData,
+      ...stepData,
+    }));
   };
 
   const handleBack = () => {
     if (step > 1) {
       setStep(step - 1);
     }
+  };
+
+  const validateCurrentStep = () => {
+    const stepErrors = {};
+    const passwordRegex =
+      /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+
+    switch (step) {
+      case 1:
+        if (!validateInput("firstName", firstName))
+          stepErrors.firstName = "First name is required";
+        if (!validateInput("lastName", lastName))
+          stepErrors.lastName = "Last name is required";
+        break;
+      case 2:
+        if (!validateInput("username", username))
+          stepErrors.username = "Username is required";
+        if (!validateInput("email", email))
+          stepErrors.email = "Valid email is required";
+        break;
+      case 3:
+        if (!selectedCountry) stepErrors.country = "Country is required";
+        if (!validateInput("phoneNumber", phone_number))
+          stepErrors.phone_number = "Valid phone number is required";
+        break;
+      case 4:
+        if (!validateInput("password", password))
+          stepErrors.password = "Password must be at least 8 characters long";
+        if (!passwordRegex.test(password))
+          stepErrors.password = "Password must include a number and a symbol";
+        if (password !== confirmPassword)
+          stepErrors.confirmPassword = "Passwords do not match";
+        break;
+    }
+    return stepErrors;
   };
 
   const handleSubmit = () => {
@@ -105,19 +142,18 @@ const SignUp = () => {
         password,
       };
 
-      console.log("Submitting user data:", userData);
+      setLoading(true);
       signUpMutation.mutate(userData, {
         onSuccess: (data) => {
-          // Handle successful sign up
+          setLoading(false);
           console.log("Sign up successful:", data);
-          // Navigate to the next screen or show a success message
           router.push("auth/verifyOtp");
         },
         onError: (error) => {
-          // Handle sign up error
+          setLoading(false);
           console.error("Sign up error:", error);
           Alert.alert("Error", "Failed to sign up. Please try again.");
-        }
+        },
       });
     } else {
       setErrors(currentStepErrors);
@@ -125,35 +161,42 @@ const SignUp = () => {
     }
   };
 
-  const validateCurrentStep = () => {
-    const stepErrors = {};
-    switch (step) {
-      case 1:
-        if (!validateInput('firstName', firstName)) stepErrors.firstName = 'First name is required';
-        if (!validateInput('lastName', lastName)) stepErrors.lastName = 'Last name is required';
-        break;
-      case 2:
-        if (!validateInput('username', username)) stepErrors.username = 'Username is required';
-        if (!validateInput('email', email)) stepErrors.email = 'Valid email is required';
-        break;
-      case 3:
-        if (!selectedCountry) stepErrors.country = 'Country is required';
-        if (!validateInput('phoneNumber', phone_number)) stepErrors.phone_number = 'Valid phone number is required';
-        break;
-      case 4:
-        if (!validateInput('password', password)) stepErrors.password = 'Password must be at least 8 characters long';
-        if (password !== confirmPassword) stepErrors.confirmPassword = 'Passwords do not match';
-        break;
-    }
-    return stepErrors;
-  };
+  // const validateCurrentStep = () => {
+  //   const stepErrors = {};
+  //   switch (step) {
+  //     case 1:
+  //       if (!validateInput("firstName", firstName))
+  //         stepErrors.firstName = "First name is required";
+  //       if (!validateInput("lastName", lastName))
+  //         stepErrors.lastName = "Last name is required";
+  //       break;
+  //     case 2:
+  //       if (!validateInput("username", username))
+  //         stepErrors.username = "Username is required";
+  //       if (!validateInput("email", email))
+  //         stepErrors.email = "Valid email is required";
+  //       break;
+  //     case 3:
+  //       if (!selectedCountry) stepErrors.country = "Country is required";
+  //       if (!validateInput("phoneNumber", phone_number))
+  //         stepErrors.phone_number = "Valid phone number is required";
+  //       break;
+  //     case 4:
+  //       if (!validateInput("password", password))
+  //         stepErrors.password = "Password must be at least 8 characters long";
+  //       if (password !== confirmPassword)
+  //         stepErrors.confirmPassword = "Passwords do not match";
+  //       break;
+  //   }
+  //   return stepErrors;
+  // };
 
   const handleCountrySelect = (country) => {
     setSelectedCountry(country);
     if (country && country.callingCode) {
       setPhoneNumber(`+${country.callingCode}`);
     } else {
-      setPhoneNumber('');
+      setPhoneNumber("");
     }
   };
 
@@ -161,7 +204,7 @@ const SignUp = () => {
     if (selectedCountry && selectedCountry.callingCode) {
       const countryCode = `${selectedCountry.callingCode}`;
       if (!text.startsWith(countryCode)) {
-        text = countryCode + text.replace(/[^\d]/g, '');
+        text = countryCode + text.replace(/[^\d]/g, "");
       }
     }
     setPhoneNumber(text);
@@ -267,7 +310,7 @@ const SignUp = () => {
   };
 
   const renderButton = () => {
-    if (signUpMutation.isLoading) {
+    if (loading) {
       return (
         <View style={[styles.nextBtn, styles.loadingBtn]}>
           <ActivityIndicator color={theme.colors.white} />
@@ -293,10 +336,6 @@ const SignUp = () => {
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollView}>
-        {/* <Animated.Image
-          source={require("../../assets/images/!slandPay.png")}
-          style={styles.title}
-        /> */}
         <View style={styles.formCon}>
           <Text style={styles.header}>Sign up</Text>
           <ProgressBar currentStep={step} totalSteps={totalSteps} />
@@ -310,7 +349,7 @@ const SignUp = () => {
               <TouchableOpacity
                 style={styles.backBtn}
                 onPress={handleBack}
-                disabled={signUpMutation.isLoading}
+                disabled={loading}
               >
                 <Text style={styles.backBtnText}>Back</Text>
               </TouchableOpacity>
@@ -332,7 +371,16 @@ const SignUp = () => {
   );
 };
 
-const InputField = ({ value, onChangeText, placeholder, icon, secureTextEntry, toggleSecure, error, ...props }) => (
+const InputField = ({
+  value,
+  onChangeText,
+  placeholder,
+  icon,
+  secureTextEntry,
+  toggleSecure,
+  error,
+  ...props
+}) => (
   <View style={styles.inputGroup}>
     <View style={[styles.inputWrapper, error && styles.inputError]}>
       <TextInput
@@ -390,7 +438,7 @@ const styles = StyleSheet.create({
   },
   stepContainer: {
     minHeight: hp(40),
-    justifyContent: 'center',
+    justifyContent: "center",
   },
   inputGroup: {
     marginBottom: hp(3),
@@ -414,8 +462,8 @@ const styles = StyleSheet.create({
     marginLeft: wp(2),
   },
   buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: "row",
+    justifyContent: "space-between",
     marginTop: hp(5),
   },
   backBtn: {
@@ -471,13 +519,13 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.error,
   },
   errorText: {
-    color: theme.colors.error || '#FF6B6B', // Use a bright red color if theme.colors.error is not defined
+    color: theme.colors.error || "#FF6B6B",
     fontSize: 14,
     marginTop: hp(1),
   },
   loadingBtn: {
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 
