@@ -1,50 +1,58 @@
-import React, { useState } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  Modal,
-  FlatList,
-} from "react-native";
+import React from "react";
+import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { theme } from "../../constants/theme";
 import { wp, hp } from "../../helpers/common";
-import Animated from "react-native-reanimated";
+import { LinearGradient } from "expo-linear-gradient";
 import { router } from "expo-router";
 
-const sendFunds = () => {
+const SendFunds = () => {
   return (
     <View style={styles.container}>
-      <Animated.Image
+      <Image
         source={require("../../assets/images/!slandPay.png")}
-        style={styles.Imgtitle}
+        style={styles.logoImage}
+        resizeMode="contain"
       />
-      <Text style={styles.title}>Send Funds</Text>
+      <View style={styles.header}>
+        <Text style={styles.title}>Send Funds</Text>
+        <Text style={styles.subtitle}>Choose your preferred method</Text>
+      </View>
 
-      <TouchableOpacity
-        style={styles.addButton}
-        onPress={() => router.push("sendThroughIsland")}
-      >
-        <MaterialIcons
-          name="send"
-          size={wp(5)}
-          color={theme.colors.white}
-          style={styles.icon}
-        />
-        <Text style={styles.addButtonText}>Send Through Island</Text>
-      </TouchableOpacity>
+      <View style={styles.buttonContainer}>
+        <TouchableOpacity
+          style={styles.button}
+          onPress={() => router.push("sendThroughIsland")}
+        >
+          <LinearGradient
+            colors={[theme.colors.purple, theme.colors.darkerPurple]}
+            style={styles.gradient}
+          >
+            <MaterialIcons
+              name="send"
+              size={wp(8)}
+              color={theme.colors.white}
+              style={styles.icon}
+            />
+            <Text style={styles.buttonText}>Send Through Island</Text>
+          </LinearGradient>
+        </TouchableOpacity>
 
-      <TouchableOpacity style={styles.addButton}>
-        <MaterialIcons
-          name="add"
-          size={wp(5)}
-          color={theme.colors.white}
-          style={styles.icon}
-        />
-        <Text style={styles.addButtonText}>Send Via Account</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.button}>
+          <LinearGradient
+            colors={[theme.colors.grey_clean, theme.colors.purple]}
+            style={styles.gradient}
+          >
+            <MaterialIcons
+              name="account-balance"
+              size={wp(8)}
+              color={theme.colors.white}
+              style={styles.icon}
+            />
+            <Text style={styles.buttonText}>Send Via Account</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -52,43 +60,54 @@ const sendFunds = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    justifyContent: "center",
-    alignItems: "start",
+    justifyContent: "flex-start",
+    alignItems: "center",
     backgroundColor: theme.colors.black,
     padding: wp(5),
-    paddingTop: hp(20), // Add padding to avoid overlap with the image
   },
-  title: {
-    fontSize: wp(6),
-    fontWeight: theme.fontWeights.bold,
-    color: theme.colors.white,
+  logoImage: {
+    width: wp(50),
+    height: hp(20),
+    marginTop: hp(5),
     marginBottom: hp(3),
   },
-  Imgtitle: {
-    position: "absolute",
-    top: 0,
-    alignSelf: "center",
-    marginTop: hp(10),
-    marginBottom: hp(2),
+  header: {
+    alignItems: "center",
+    marginBottom: hp(5),
   },
-  addButton: {
+  title: {
+    fontSize: wp(8),
+    fontWeight: theme.fontWeights.bold,
+    color: theme.colors.white,
+    marginBottom: hp(1),
+  },
+  subtitle: {
+    fontSize: wp(4),
+    color: theme.colors.lightGrey,
+  },
+  buttonContainer: {
+    width: "100%",
+  },
+  button: {
+    marginBottom: hp(3),
+    borderRadius: theme.radius.lg,
+    overflow: "hidden",
+    elevation: 5,
+  },
+  gradient: {
     flexDirection: "row",
-    backgroundColor: theme.colors.purple,
-    padding: wp(4),
-    borderRadius: theme.radius.md,
-    width: wp(80),
     alignItems: "center",
     justifyContent: "center",
-    marginVertical: hp(2),
+    padding: wp(5),
   },
   icon: {
-    marginRight: wp(2),
+    marginRight: wp(3),
   },
-  addButtonText: {
+  buttonText: {
     color: theme.colors.white,
-    fontSize: wp(4.5),
-    fontWeight: theme.fontWeights.bold,
+    fontSize: wp(5),
+    fontWeight: theme.fontWeights.semiBold,
   },
 });
 
-export default sendFunds;
+export default SendFunds;

@@ -9,40 +9,108 @@ import {
   TextInput,
   Image,
   ActivityIndicator,
+  TouchableWithoutFeedback,
 } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
 import { theme } from "../../constants/theme";
 import { wp, hp } from "../../helpers/common";
-import { useGetRate, useConvertMoney } from "../apiCall/apiCall";
-
-const currencies = [
-  { name: "Nigeria", code: "NGN", symbol: "₦", flag: "🇳🇬" },
-  { name: "Kenya", code: "KES", symbol: "KSh", flag: "🇰🇪" },
-  { name: "Ghana", code: "GHS", symbol: "₵", flag: "🇬🇭" },
-  { name: "United States", code: "USD", symbol: "$", flag: "🇺🇸" },
-  { name: "South Africa", code: "ZAR", symbol: "R", flag: "🇿🇦" },
-  { name: "United Kingdom", code: "GBP", symbol: "£", flag: "🇬🇧" },
-  { name: "West African CFA", code: "XOF", symbol: "CFA", flag: "🇨🇮" },
-  { name: "Central African CFA", code: "XAF", symbol: "CFA", flag: "🇨🇲" },
-];
+import {
+  useGetRate,
+  useConvertMoney,
+  useGetWalletDetails,
+} from "../apiCall/apiCall";
+import { router } from "expo-router";
 
 const ConvertFunds = () => {
-  const [fromCurrency, setFromCurrency] = useState(currencies[0]);
-  const [toCurrency, setToCurrency] = useState(currencies[1]);
-  const [amount, setAmount] = useState("");
+  const [fromCurrency, setFromCurrency] = useState(null);
+  const [toCurrency, setToCurrency] = useState(null);
+  const [amount, setAmount] = useState(0);
   const [pin, setPin] = useState("");
   const [isFromModalVisible, setFromModalVisible] = useState(false);
   const [isToModalVisible, setToModalVisible] = useState(false);
   const [isPinModalVisible, setPinModalVisible] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [currencies, setCurrencies] = useState([]);
+
+  const {
+    data: walletData,
+    isLoading: isWalletLoading,
+    isError: isWalletError,
+  } = useGetWalletDetails();
 
   const {
     data: rateData,
     refetch: fetchRate,
     isLoading: isRateLoading,
-  } = useGetRate(fromCurrency.code, toCurrency.code);
+  } = useGetRate(fromCurrency?.code, toCurrency?.code);
   const { mutate: convertMoney, isLoading: isConvertLoading } =
     useConvertMoney();
+
+  useEffect(() => {
+    if (walletData && walletData.Balance && walletData.Balance.Wallet) {
+      const newCurrencies = [
+        {
+          name: "Nigerian Account",
+          code: "NGN",
+          currency: "₦",
+          flag: "🇳🇬",
+          balance: walletData.Balance.Wallet.Ngn,
+        },
+        {
+          name: "USD Account",
+          code: "USD",
+          currency: "$",
+          flag: "🇺🇸",
+          balance: walletData.Balance.Wallet.Usd,
+        },
+        {
+          name: "KES Account",
+          code: "KES",
+          currency: "KSh",
+          flag: "🇰🇪",
+          balance: walletData.Balance.Wallet.Kes,
+        },
+        {
+          name: "ZAR Account",
+          code: "ZAR",
+          currency: "R",
+          flag: "🇿🇦",
+          balance: walletData.Balance.Wallet.Zar,
+        },
+        {
+          name: "GHS Account",
+          code: "GHS",
+          currency: "₵",
+          flag: "🇬🇭",
+          balance: walletData.Balance.Wallet.Ghs,
+        },
+        {
+          name: "XOF Account",
+          code: "XOF",
+          currency: "CFA",
+          flag: "🇨🇮",
+          balance: walletData.Balance.Wallet.Xof,
+        },
+        {
+          name: "XAF Account",
+          code: "XAF",
+          currency: "CFA",
+          flag: "🇨🇲",
+          balance: walletData.Balance.Wallet.Xaf,
+        },
+        {
+          name: "GBP Account",
+          code: "GBP",
+          currency: "£",
+          flag: "🇬🇧",
+          balance: walletData.Balance.Wallet.Gbp,
+        },
+      ];
+      setCurrencies(newCurrencies);
+      setFromCurrency(newCurrencies[0]);
+      setToCurrency(newCurrencies[1]);
+    }
+  }, [walletData]);
 
   useEffect(() => {
     if (fromCurrency && toCurrency) {
@@ -71,7 +139,7 @@ const ConvertFunds = () => {
         from: fromCurrency.code,
         to: toCurrency.code,
         pin,
-        amount: parseFloat(amount),
+        amount: amount,
       },
       {
         onSuccess: (data) => {
@@ -82,9 +150,10 @@ const ConvertFunds = () => {
           }
           setPinModalVisible(false);
           setIsLoading(false);
+          router.push("dashboard");
         },
-        onError: () => {
-          alert("An error occurred during conversion.");
+        onError: (error) => {
+          alert(error.response.data.Error);
           setIsLoading(false);
         },
       }
@@ -104,8 +173,29 @@ const ConvertFunds = () => {
       <Text style={styles.currencyItemText}>
         {item.flag} {item.name} ({item.code})
       </Text>
+      <Text style={styles.balanceText}>
+        Balance: {item.currency} {item.balance.toFixed(2)}
+      </Text>
     </TouchableOpacity>
   );
+
+  if (isWalletLoading) {
+    return (
+      <View style={styles.container}>
+        <ActivityIndicator size="large" color={theme.colors.purple} />
+      </View>
+    );
+  }
+
+  if (isWalletError) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>
+          Error loading wallet data. Please try again.
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -117,7 +207,7 @@ const ConvertFunds = () => {
           onPress={() => setFromModalVisible(true)}
         >
           <Text style={styles.currencySelectorText}>
-            {fromCurrency.flag} {fromCurrency.code}
+            {fromCurrency?.flag} {fromCurrency?.code}
           </Text>
           <MaterialIcons
             name="arrow-drop-down"
@@ -130,7 +220,7 @@ const ConvertFunds = () => {
           <MaterialIcons
             name="swap-horiz"
             size={24}
-            color={theme.colors.purple}
+            color={theme.colors.orange}
           />
         </TouchableOpacity>
 
@@ -139,7 +229,7 @@ const ConvertFunds = () => {
           onPress={() => setToModalVisible(true)}
         >
           <Text style={styles.currencySelectorText}>
-            {toCurrency.flag} {toCurrency.code}
+            {toCurrency?.flag} {toCurrency?.code}
           </Text>
           <MaterialIcons
             name="arrow-drop-down"
@@ -150,13 +240,15 @@ const ConvertFunds = () => {
       </View>
 
       <View style={styles.amountContainer}>
-        <Text style={styles.currencySymbol}>{fromCurrency.symbol}</Text>
+        <Text style={styles.currencySymbol}>{fromCurrency?.currency}</Text>
         <TextInput
           style={styles.amountInput}
           value={amount}
           onChangeText={setAmount}
           keyboardType="numeric"
-          placeholder="Enter amount"
+          placeholder={`Enter Amount, minimum amount is ${(
+            1 / Math.abs(rateData?.Rate)
+          ).toFixed(2)} ${fromCurrency?.code}`}
           placeholderTextColor={theme.colors.grey_clean}
         />
       </View>
@@ -169,9 +261,10 @@ const ConvertFunds = () => {
             <Text style={styles.rateText}>
               Conversion Rate: {rateData.Rate}
             </Text>
+
             {amount !== "" && (
               <Text style={styles.rateText}>
-                You'll Get {toCurrency.code}{" "}
+                You'll Get {toCurrency?.currency}{" "}
                 {(rateData.Rate * parseFloat(amount)).toFixed(2)}
               </Text>
             )}
@@ -203,20 +296,29 @@ const ConvertFunds = () => {
           setToModalVisible(false);
         }}
       >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>
-              Select {isFromModalVisible ? "From" : "To"} Currency
-            </Text>
-            <FlatList
-              data={currencies}
-              renderItem={(item) =>
-                renderCurrencyItem(item, isFromModalVisible ? "from" : "to")
-              }
-              keyExtractor={(item) => item.code}
-            />
+        <TouchableWithoutFeedback
+          onPress={() => {
+            setFromModalVisible(false);
+            setToModalVisible(false);
+          }}
+        >
+          <View style={styles.modalContainer}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                <Text style={styles.modalTitle}>
+                  Select {isFromModalVisible ? "From" : "To"} Currency
+                </Text>
+                <FlatList
+                  data={currencies}
+                  renderItem={(item) =>
+                    renderCurrencyItem(item, isFromModalVisible ? "from" : "to")
+                  }
+                  keyExtractor={(item) => item.code}
+                />
+              </View>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       <Modal
@@ -225,36 +327,43 @@ const ConvertFunds = () => {
         visible={isPinModalVisible}
         onRequestClose={() => setPinModalVisible(false)}
       >
-        <View style={styles.pinModalContainer}>
-          <View style={styles.pinModalContent}>
-            <Image
-              source={require("../../assets/images/pass.png")}
-              style={styles.image}
-            />
-            <Text style={styles.modalTitle}>Enter PIN</Text>
-            <TextInput
-              style={styles.pinInput}
-              value={pin}
-              onChangeText={setPin}
-              keyboardType="numeric"
-              secureTextEntry={true}
-              placeholder=""
-              placeholderTextColor={theme.colors.grey_clean}
-              maxLength={4}
-            />
-            <TouchableOpacity
-              style={[styles.submitButton, !pin && styles.disabledButton]}
-              onPress={handlePinSubmit}
-              disabled={!pin || isLoading}
-            >
-              {isConvertLoading ? (
-                <ActivityIndicator size="small" color={theme.colors.white} />
-              ) : (
-                <Text style={styles.submitButtonText}>Submit</Text>
-              )}
-            </TouchableOpacity>
+        <TouchableWithoutFeedback onPress={() => setPinModalVisible(false)}>
+          <View style={styles.pinModalContainer}>
+            <TouchableWithoutFeedback>
+              <View style={styles.pinModalContent}>
+                <Image
+                  source={require("../../assets/images/pass.png")}
+                  style={styles.image}
+                />
+                <Text style={styles.modalTitle}>Enter PIN</Text>
+                <TextInput
+                  style={styles.pinInput}
+                  value={pin}
+                  onChangeText={setPin}
+                  keyboardType="numeric"
+                  secureTextEntry={true}
+                  placeholder=""
+                  placeholderTextColor={theme.colors.grey_clean}
+                  maxLength={4}
+                />
+                <TouchableOpacity
+                  style={[styles.submitButton, !pin && styles.disabledButton]}
+                  onPress={handlePinSubmit}
+                  disabled={!pin || isLoading}
+                >
+                  {isConvertLoading ? (
+                    <ActivityIndicator
+                      size="small"
+                      color={theme.colors.white}
+                    />
+                  ) : (
+                    <Text style={styles.submitButtonText}>Submit</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </TouchableWithoutFeedback>
           </View>
-        </View>
+        </TouchableWithoutFeedback>
       </Modal>
     </View>
   );
@@ -319,7 +428,7 @@ const styles = StyleSheet.create({
     borderColor: theme.colors.grey_deep,
     borderRadius: theme.radius.md,
     padding: wp(3),
-    fontSize: wp(4.5),
+    fontSize: wp(3.5),
     color: theme.colors.white,
     flex: 1,
     backgroundColor: theme.colors.grey_deep_2,
@@ -418,5 +527,15 @@ const styles = StyleSheet.create({
     color: theme.colors.white,
     fontSize: wp(4.5),
     fontWeight: theme.fontWeights.bold,
+  },
+  balanceText: {
+    fontSize: wp(3.5),
+    color: theme.colors.grey_clean,
+    marginTop: hp(1),
+  },
+  errorText: {
+    fontSize: wp(4),
+    color: theme.colors.red,
+    textAlign: "center",
   },
 });
