@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   Pressable,
   Alert,
+  ActivityIndicator, // Add this import
 } from "react-native";
 import { theme } from "../../constants/theme";
 import { hp, wp } from "../../helpers/common";
@@ -20,9 +21,9 @@ import { useRouter } from "expo-router";
 import ProgressBar from "./components/ProgressBar";
 import CountrySelector from "./components/CountrySelector";
 import useUserStore from "../../store/userStore";
-import axios from "axios";
+import { useSignUpMutation } from "../apiCall/apiCall";
+import { validateInput } from '../../helpers/inputValidation'; // We'll create this helper function
 
-const { EXPO_PUBLIC_API_ENDPOINT } = process.env;
 
 const SignUp = () => {
   const [firstName, setFirstName] = useState("");
@@ -44,15 +45,22 @@ const SignUp = () => {
   const [zipCode, setZipCode] = useState("");
   const [step, setStep] = useState(1);
   const totalSteps = 4; // Changed from 5 to 4
+  const [errors, setErrors] = useState({});
 
   const router = useRouter();
   const setUser = useUserStore((state) => state.setUser);
+  const signUpMutation = useSignUpMutation(setUser);
 
   const handleNext = () => {
-    if (step < totalSteps) {
-      setStep(step + 1);
+    const currentStepErrors = validateCurrentStep();
+    if (Object.keys(currentStepErrors).length === 0) {
+      if (step < totalSteps) {
+        setStep(step + 1);
+      } else {
+        handleSubmit();
+      }
     } else {
-      handleSubmit();
+      setErrors(currentStepErrors);
     }
   };
 
@@ -62,7 +70,7 @@ const SignUp = () => {
     }
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     if (password !== confirmPassword) {
       Alert.alert("Error", "Passwords do not match");
       return;
@@ -79,15 +87,51 @@ const SignUp = () => {
       password,
     };
 
-    try {
-      const response = await axios.post(`${EXPO_PUBLIC_API_ENDPOINT}/register/1`, userData);
-      console.log("Signup successful:", response.data);
-      setUser(response.data.user); // Assuming the API returns user data
-      router.push("auth/verifyOtp");
-    } catch (error) {
-      console.error("Signup error:", error);
-      Alert.alert("Error", error.response?.data?.message || "An error occurred during signup");
+    console.log(userData);
+
+    signUpMutation.mutate(userData);
+  };
+
+  const validateCurrentStep = () => {
+    const stepErrors = {};
+    switch (step) {
+      case 1:
+        if (!validateInput('firstName', firstName)) stepErrors.firstName = 'First name is required';
+        if (!validateInput('lastName', lastName)) stepErrors.lastName = 'Last name is required';
+        break;
+      case 2:
+        if (!validateInput('username', username)) stepErrors.username = 'Username is required';
+        if (!validateInput('email', email)) stepErrors.email = 'Valid email is required';
+        break;
+      case 3:
+        if (!selectedCountry) stepErrors.country = 'Country is required';
+        if (!validateInput('phoneNumber', phoneNumber)) stepErrors.phoneNumber = 'Valid phone number is required';
+        break;
+      case 4:
+        if (!validateInput('password', password)) stepErrors.password = 'Password must be at least 8 characters long';
+        if (password !== confirmPassword) stepErrors.confirmPassword = 'Passwords do not match';
+        break;
     }
+    return stepErrors;
+  };
+
+  const handleCountrySelect = (country) => {
+    setSelectedCountry(country);
+    if (country && country.callingCode) {
+      setPhoneNumber(`+${country.callingCode}`);
+    } else {
+      setPhoneNumber('');
+    }
+  };
+
+  const handlePhoneNumberChange = (text) => {
+    if (selectedCountry && selectedCountry.callingCode) {
+      const countryCode = `+${selectedCountry.callingCode}`;
+      if (!text.startsWith(countryCode)) {
+        text = countryCode + text.replace(/[^\d]/g, '');
+      }
+    }
+    setPhoneNumber(text);
   };
 
   const renderStep = () => {
@@ -101,12 +145,14 @@ const SignUp = () => {
               onChangeText={setFirstName}
               placeholder="First Name"
               icon="account-outline"
+              error={errors.firstName}
             />
             <InputField
               value={lastName}
               onChangeText={setLastName}
               placeholder="Last Name"
               icon="account-outline"
+              error={errors.lastName}
             />
             <InputField
               value={middleName}
@@ -125,6 +171,7 @@ const SignUp = () => {
               onChangeText={setUsername}
               placeholder="Username"
               icon="account-circle-outline"
+              error={errors.username}
             />
             <InputField
               value={email}
@@ -133,6 +180,7 @@ const SignUp = () => {
               icon="email-outline"
               keyboardType="email-address"
               autoCapitalize="none"
+              error={errors.email}
             />
           </>
         );
@@ -142,15 +190,17 @@ const SignUp = () => {
             <Text style={styles.stepTitle}>Contact Information</Text>
             <CountrySelector
               selectedCountry={selectedCountry}
-              onSelect={setSelectedCountry}
+              onSelect={handleCountrySelect}
+              error={errors.country}
             />
             <InputField
               value={phoneNumber}
-              onChangeText={setPhoneNumber}
+              onChangeText={handlePhoneNumberChange}
               placeholder="Phone Number"
               icon="phone-outline"
               keyboardType="phone-pad"
               editable={!!selectedCountry}
+              error={errors.phoneNumber}
             />
           </>
         );
@@ -165,6 +215,7 @@ const SignUp = () => {
               icon="lock-outline"
               secureTextEntry={!showPassword}
               toggleSecure={() => setShowPassword(!showPassword)}
+              error={errors.password}
             />
             <InputField
               value={confirmPassword}
@@ -173,6 +224,7 @@ const SignUp = () => {
               icon="lock-outline"
               secureTextEntry={!showConfirmPassword}
               toggleSecure={() => setShowConfirmPassword(!showConfirmPassword)}
+              error={errors.confirmPassword}
             />
           </>
         );
@@ -181,16 +233,37 @@ const SignUp = () => {
     }
   };
 
+  const renderButton = () => {
+    if (signUpMutation.isLoading) {
+      return (
+        <View style={[styles.nextBtn, styles.loadingBtn]}>
+          <ActivityIndicator color={theme.colors.white} />
+        </View>
+      );
+    }
+
+    return (
+      <TouchableOpacity
+        style={[styles.nextBtn, step === 1 && styles.fullWidthBtn]}
+        onPress={handleNext}
+      >
+        <Text style={styles.nextBtnText}>
+          {step === totalSteps ? "Sign Up" : "Next"}
+        </Text>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={styles.container}
     >
       <ScrollView contentContainerStyle={styles.scrollView}>
-        <Animated.Image
+        {/* <Animated.Image
           source={require("../../assets/images/!slandPay.png")}
           style={styles.title}
-        />
+        /> */}
         <View style={styles.formCon}>
           <Text style={styles.header}>Sign up</Text>
           <ProgressBar currentStep={step} totalSteps={totalSteps} />
@@ -201,18 +274,15 @@ const SignUp = () => {
 
           <View style={styles.buttonContainer}>
             {step > 1 && (
-              <TouchableOpacity style={styles.backBtn} onPress={handleBack}>
+              <TouchableOpacity
+                style={styles.backBtn}
+                onPress={handleBack}
+                disabled={signUpMutation.isLoading}
+              >
                 <Text style={styles.backBtnText}>Back</Text>
               </TouchableOpacity>
             )}
-            <TouchableOpacity
-              style={[styles.nextBtn, step === 1 && styles.fullWidthBtn]}
-              onPress={handleNext}
-            >
-              <Text style={styles.nextBtnText}>
-                {step === totalSteps ? "Sign Up" : "Next"}
-              </Text>
-            </TouchableOpacity>
+            {renderButton()}
           </View>
 
           <Pressable onPress={() => router.push("auth/signIn")}>
@@ -229,9 +299,9 @@ const SignUp = () => {
   );
 };
 
-const InputField = ({ value, onChangeText, placeholder, icon, secureTextEntry, toggleSecure, ...props }) => (
+const InputField = ({ value, onChangeText, placeholder, icon, secureTextEntry, toggleSecure, error, ...props }) => (
   <View style={styles.inputGroup}>
-    <View style={styles.inputWrapper}>
+    <View style={[styles.inputWrapper, error && styles.inputError]}>
       <TextInput
         style={styles.input}
         value={value}
@@ -257,6 +327,7 @@ const InputField = ({ value, onChangeText, placeholder, icon, secureTextEntry, t
         />
       )}
     </View>
+    {error && <Text style={styles.errorText}>{error}</Text>}
   </View>
 );
 
@@ -276,7 +347,7 @@ const styles = StyleSheet.create({
     marginBottom: hp(4),
   },
   formCon: {
-    marginTop: hp(2),
+    marginTop: hp(10),
   },
   header: {
     color: theme.colors.white,
@@ -362,6 +433,18 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: "bold",
     marginBottom: hp(4),
+  },
+  inputError: {
+    borderColor: theme.colors.error,
+  },
+  errorText: {
+    color: theme.colors.error || '#FF6B6B', // Use a bright red color if theme.colors.error is not defined
+    fontSize: 14,
+    marginTop: hp(1),
+  },
+  loadingBtn: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
