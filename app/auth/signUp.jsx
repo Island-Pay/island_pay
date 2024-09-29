@@ -43,7 +43,7 @@ const SignUp = () => {
   const [country, setCountry] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [step, setStep] = useState(1);
-  const totalSteps = 5;
+  const totalSteps = 4; // Changed from 5 to 4
 
   const router = useRouter();
   const setUser = useUserStore((state) => state.setUser);
@@ -75,13 +75,8 @@ const SignUp = () => {
       username,
       email,
       phoneNumber,
-      country: selectedCountry?.name || country,
+      country: selectedCountry?.name,
       password,
-      dateOfBirth,
-      address,
-      city,
-      state,
-      zipCode,
     };
 
     try {
@@ -160,48 +155,6 @@ const SignUp = () => {
           </>
         );
       case 4:
-        return (
-          <>
-            <Text style={styles.stepTitle}>Address Information</Text>
-            <InputField
-              value={dateOfBirth}
-              onChangeText={setDateOfBirth}
-              placeholder="Date of Birth (YYYY-MM-DD)"
-              icon="calendar"
-            />
-            <InputField
-              value={address}
-              onChangeText={setAddress}
-              placeholder="Address"
-              icon="map-marker-outline"
-            />
-            <InputField
-              value={city}
-              onChangeText={setCity}
-              placeholder="City"
-              icon="city"
-            />
-            <InputField
-              value={state}
-              onChangeText={setState}
-              placeholder="State"
-              icon="map-outline"
-            />
-            <InputField
-              value={country}
-              onChangeText={setCountry}
-              placeholder="Country"
-              icon="flag-outline"
-            />
-            <InputField
-              value={zipCode}
-              onChangeText={setZipCode}
-              placeholder="Zip Code"
-              icon="mailbox-outline"
-            />
-          </>
-        );
-      case 5:
         return (
           <>
             <Text style={styles.stepTitle}>Set Password</Text>
