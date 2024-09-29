@@ -5,13 +5,13 @@ import { hp, wp } from "../../../helpers/common";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
 
 const countries = [
-  { name: "Nigeria", code: "+234" },
-  { name: "Kenya", code: "+254" },
-  { name: "Ghana", code: "+233" },
-  { name: "United States", code: "+1" },
+  { name: "Nigeria", callingCode: "234" },
+  { name: "Kenya", callingCode: "254" },
+  { name: "Ghana", callingCode: "233" },
+  { name: "United States", callingCode: "1" },
 ];
 
-const CountrySelector = ({ selectedCountry, onSelect }) => {
+const CountrySelector = ({ selectedCountry, onSelect, error }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [animation] = useState(new Animated.Value(0));
 
@@ -44,12 +44,13 @@ const CountrySelector = ({ selectedCountry, onSelect }) => {
 
   return (
     <View style={styles.container}>
-      <TouchableOpacity onPress={openModal} style={styles.selector}>
+      <TouchableOpacity onPress={openModal} style={[styles.selector, error && styles.selectorError]}>
         <Text style={styles.selectorText}>
-          {selectedCountry ? selectedCountry.name : "Select Country"}
+          {selectedCountry ? `${selectedCountry.name} (+${selectedCountry.callingCode})` : "Select Country"}
         </Text>
         <MaterialCommunityIcons name="chevron-down" size={24} color={theme.colors.grey_deep_2} />
       </TouchableOpacity>
+      {error && <Text style={styles.errorText}>{error}</Text>}
 
       <Modal
         transparent={true}
@@ -71,14 +72,14 @@ const CountrySelector = ({ selectedCountry, onSelect }) => {
             </View>
             <FlatList
               data={countries}
-              keyExtractor={(item) => item.code}
+              keyExtractor={(item) => item.callingCode}
               renderItem={({ item }) => (
                 <TouchableOpacity
                   style={styles.countryItem}
                   onPress={() => handleSelect(item)}
                 >
                   <Text style={styles.countryName}>{item.name}</Text>
-                  <Text style={styles.countryCode}>{item.code}</Text>
+                  <Text style={styles.countryCode}>+{item.callingCode}</Text>
                 </TouchableOpacity>
               )}
             />
@@ -106,6 +107,14 @@ const styles = StyleSheet.create({
   selectorText: {
     color: theme.colors.white,
     fontSize: 18,
+  },
+  selectorError: {
+    borderColor: theme.colors.error,
+  },
+  errorText: {
+    color: theme.colors.error,
+    fontSize: 14,
+    marginTop: hp(1),
   },
   modalOverlay: {
     flex: 1,
