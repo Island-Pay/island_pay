@@ -1,5 +1,8 @@
 # Welcome to your Expo app 👋
 
+
+use an aab to apk converter to run the android build or you can test with expo go
+
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
 
 ## Get started
