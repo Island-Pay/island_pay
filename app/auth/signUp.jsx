@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -20,18 +20,20 @@ import Animated from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import ProgressBar from "./components/ProgressBar";
 import CountrySelector from "./components/CountrySelector";
-import useUserStore from "../../store/userStore";
-import { useSignUpMutation } from "../apiCall/apiCall";
+import { useSignUpMutation, useUserData } from "../apiCall/apiCall";
 import { validateInput } from '../../helpers/inputValidation'; // We'll create this helper function
+import { useQueryClient } from "@tanstack/react-query";
 
 
 const SignUp = () => {
+  const queryClient = useQueryClient();
+
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [middleName, setMiddleName] = useState("");
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
-  const [phoneNumber, setPhoneNumber] = useState("");
+  const [phone_number, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -48,20 +50,34 @@ const SignUp = () => {
   const [errors, setErrors] = useState({});
 
   const router = useRouter();
-  const setUser = useUserStore((state) => state.setUser);
-  const signUpMutation = useSignUpMutation(setUser);
+  const signUpMutation = useSignUpMutation();
 
   const handleNext = () => {
     const currentStepErrors = validateCurrentStep();
     if (Object.keys(currentStepErrors).length === 0) {
       if (step < totalSteps) {
         setStep(step + 1);
+        // Save current step data to cache
+        saveStepDataToCache();
       } else {
         handleSubmit();
       }
     } else {
       setErrors(currentStepErrors);
     }
+  };
+
+  const saveStepDataToCache = () => {
+    const stepData = {
+      firstName,
+      lastName,
+      middleName,
+      username,
+      email,
+      phone_number,
+      country: selectedCountry?.name,
+    };
+    queryClient.setQueryData(['user'], (oldData) => ({ ...oldData, ...stepData }));
   };
 
   const handleBack = () => {
@@ -71,25 +87,42 @@ const SignUp = () => {
   };
 
   const handleSubmit = () => {
-    if (password !== confirmPassword) {
-      Alert.alert("Error", "Passwords do not match");
-      return;
+    const currentStepErrors = validateCurrentStep();
+    if (Object.keys(currentStepErrors).length === 0) {
+      if (password !== confirmPassword) {
+        Alert.alert("Error", "Passwords do not match");
+        return;
+      }
+
+      const userData = {
+        firstName,
+        lastName,
+        middleName,
+        username,
+        email,
+        phone_number,
+        country: selectedCountry?.name,
+        password,
+      };
+
+      console.log("Submitting user data:", userData);
+      signUpMutation.mutate(userData, {
+        onSuccess: (data) => {
+          // Handle successful sign up
+          console.log("Sign up successful:", data);
+          // Navigate to the next screen or show a success message
+          router.push("auth/verifyOtp");
+        },
+        onError: (error) => {
+          // Handle sign up error
+          console.error("Sign up error:", error);
+          Alert.alert("Error", "Failed to sign up. Please try again.");
+        }
+      });
+    } else {
+      setErrors(currentStepErrors);
+      Alert.alert("Error", "Please fill in all required fields correctly.");
     }
-
-    const userData = {
-      firstName,
-      lastName,
-      middleName,
-      username,
-      email,
-      phoneNumber,
-      country: selectedCountry?.name,
-      password,
-    };
-
-    console.log(userData);
-
-    signUpMutation.mutate(userData);
   };
 
   const validateCurrentStep = () => {
@@ -105,7 +138,7 @@ const SignUp = () => {
         break;
       case 3:
         if (!selectedCountry) stepErrors.country = 'Country is required';
-        if (!validateInput('phoneNumber', phoneNumber)) stepErrors.phoneNumber = 'Valid phone number is required';
+        if (!validateInput('phoneNumber', phone_number)) stepErrors.phone_number = 'Valid phone number is required';
         break;
       case 4:
         if (!validateInput('password', password)) stepErrors.password = 'Password must be at least 8 characters long';
@@ -126,7 +159,7 @@ const SignUp = () => {
 
   const handlePhoneNumberChange = (text) => {
     if (selectedCountry && selectedCountry.callingCode) {
-      const countryCode = `+${selectedCountry.callingCode}`;
+      const countryCode = `${selectedCountry.callingCode}`;
       if (!text.startsWith(countryCode)) {
         text = countryCode + text.replace(/[^\d]/g, '');
       }
@@ -194,13 +227,13 @@ const SignUp = () => {
               error={errors.country}
             />
             <InputField
-              value={phoneNumber}
+              value={phone_number}
               onChangeText={handlePhoneNumberChange}
               placeholder="Phone Number"
               icon="phone-outline"
               keyboardType="phone-pad"
               editable={!!selectedCountry}
-              error={errors.phoneNumber}
+              error={errors.phone_number}
             />
           </>
         );
@@ -245,7 +278,7 @@ const SignUp = () => {
     return (
       <TouchableOpacity
         style={[styles.nextBtn, step === 1 && styles.fullWidthBtn]}
-        onPress={handleNext}
+        onPress={step === totalSteps ? handleSubmit : handleNext}
       >
         <Text style={styles.nextBtnText}>
           {step === totalSteps ? "Sign Up" : "Next"}

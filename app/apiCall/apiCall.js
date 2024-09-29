@@ -1,5 +1,6 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 // import { router } from "expo-router";
 import { Alert } from "react-native";
 import { useRouter } from "expo-router";
@@ -10,11 +11,26 @@ const api = axios.create({
   baseURL: EXPO_PUBLIC_API_ENDPOINT,
 });
 
-const getAuthToken = () => {
-  return localStorage.getItem("authToken");
+// Replace getAuthToken function
+const getAuthToken = async () => {
+  try {
+    return await AsyncStorage.getItem("authToken");
+  } catch (error) {
+    console.error("Error getting auth token:", error);
+    return null;
+  }
 };
-const token =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyIkX18iOnsiYWN0aXZlUGF0aHMiOnsicGF0aHMiOnsicGluIjoiaW5pdCIsInBhc3N3b3JkIjoiaW5pdCIsImNvdW50cnkiOiJpbml0IiwicGhvbmVfbnVtYmVyIjoiaW5pdCIsImVtYWlsIjoiaW5pdCIsInVzZXJuYW1lIjoiaW5pdCIsImxhc3ROYW1lIjoiaW5pdCIsImZpcnN0TmFtZSI6ImluaXQiLCJ1c2VyRGV0YWlsc192ZXJpZnkiOiJpbml0IiwiZW1haWxfdmVyaWYiOiJpbml0IiwicGhvbmVfbnVtYmVyX3ZlcmlmIjoiaW5pdCIsImt5YyI6ImluaXQiLCJiYW5rX3ZlcmlmIjoiaW5pdCIsImlkX3ZlcmlmIjoiaW5pdCIsImFncmVlX3RvX3Rlcm1zIjoiaW5pdCIsIkJsb2NrZWQiOiJpbml0IiwiX2lkIjoiaW5pdCIsImNyZWF0ZWRBdCI6ImluaXQiLCJ1cGRhdGVkQXQiOiJpbml0IiwiX192IjoiaW5pdCJ9LCJzdGF0ZXMiOnsicmVxdWlyZSI6e30sImRlZmF1bHQiOnt9LCJpbml0Ijp7Il9pZCI6dHJ1ZSwiZmlyc3ROYW1lIjp0cnVlLCJsYXN0TmFtZSI6dHJ1ZSwidXNlcm5hbWUiOnRydWUsImVtYWlsIjp0cnVlLCJwaG9uZV9udW1iZXIiOnRydWUsImNvdW50cnkiOnRydWUsInBhc3N3b3JkIjp0cnVlLCJ1c2VyRGV0YWlsc192ZXJpZnkiOnRydWUsImVtYWlsX3ZlcmlmIjp0cnVlLCJwaG9uZV9udW1iZXJfdmVyaWYiOnRydWUsImt5YyI6dHJ1ZSwiYmFua192ZXJpZiI6dHJ1ZSwiaWRfdmVyaWYiOnRydWUsImFncmVlX3RvX3Rlcm1zIjp0cnVlLCJjcmVhdGVkQXQiOnRydWUsInVwZGF0ZWRBdCI6dHJ1ZSwiX192Ijp0cnVlLCJCbG9ja2VkIjp0cnVlLCJwaW4iOnRydWV9fX0sInNraXBJZCI6dHJ1ZX0sIiRpc05ldyI6ZmFsc2UsIl9kb2MiOnsiX2lkIjoiNjZmMTc3YTJjZjhkNzVmN2JkODAxNDcxIiwiZmlyc3ROYW1lIjoiSm9obiIsImxhc3ROYW1lIjoiRG9lIiwidXNlcm5hbWUiOiJKb2VEb2UxMjMiLCJlbWFpbCI6InNvbHV3aXp5QGdtYWlsLmNvbSIsInBob25lX251bWJlciI6MjM0ODEzMzA5MjM0MSwiY291bnRyeSI6Ik5pZ2VyaWEiLCJwYXNzd29yZCI6IiQyYSQxMCRFcnEzMFUzekRoWG9rYnpMMy5qNE1lMkxubThrak4yNk1WUm8xYzJEdXUuTW9qUlBzTUpOVyIsInVzZXJEZXRhaWxzX3ZlcmlmeSI6dHJ1ZSwiZW1haWxfdmVyaWYiOnRydWUsInBob25lX251bWJlcl92ZXJpZiI6dHJ1ZSwia3ljIjpmYWxzZSwiYmFua192ZXJpZiI6ZmFsc2UsImlkX3ZlcmlmIjpmYWxzZSwiYWdyZWVfdG9fdGVybXMiOmZhbHNlLCJjcmVhdGVkQXQiOiIyMDI0LTA5LTIzVDE0OjEzOjU0LjA2OVoiLCJ1cGRhdGVkQXQiOiIyMDI0LTA5LTI2VDA4OjUzOjA1LjY3OFoiLCJfX3YiOjAsIkJsb2NrZWQiOmZhbHNlLCJwaW4iOiIkMmEkMTAkODZBRUdJRi5mLlpwQzI2OXpqSzI0ZTFmd2s4UlYweWdOc1RNLlJYMFBBVDZKd0hnQ2k3R20ifSwiaWF0IjoxNzI3NTU3NTU0LCJleHAiOjE3Mjc2NDM5NTR9.suU78aTDbNbkmtvZXGQubNvOEtUCT35i79Q1v7qLx-0";
+
+// Update any other functions that use localStorage
+// For example, if you're using the token variable elsewhere:
+const getToken = async () => {
+  try {
+    return await AsyncStorage.getItem("authToken");
+  } catch (error) {
+    console.error("Error getting token:", error);
+    return null;
+  }
+};
 
 const getDepositLink = async ({ currency, amount }) => {
   const response = await api.post(
@@ -83,22 +99,161 @@ export const useConvertMoney = () => {
   });
 };
 
-export function useSignUpMutation(setUser) {
+export const useSignUpMutation = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (userData) => {
+      try {
+        const response = await axios.post(
+          `${EXPO_PUBLIC_API_ENDPOINT}/register/1`,
+          userData
+        );
+        return response.data;
+      } catch (error) {
+        console.error("Error during sign up:", error.response?.data || error);
+        throw error;
+      }
+    },
+    onSuccess: (data, variables) => {
+      // Update the user data in the cache
+      queryClient.setQueryData(["user"], variables);
+    },
+  });
+};
+
+// Add a new query to fetch user data
+export const useUserData = () => {
+  return useQuery({
+    queryKey: ["user"],
+    queryFn: async () => {
+      try {
+        const token = await getAuthToken();
+        const response = await api.get("/user", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+        return response.data;
+      } catch (error) {
+        console.error(
+          "Error fetching user data:",
+          error.response?.data || error
+        );
+        return null;
+      }
+    },
+    initialData: null,
+  });
+};
+
+const sendOtp = async ({ email }) => {
+  const endpoint = `/register/verify/email/1`;
+
+  const response = await api.get(endpoint, {
+    params: { email },
+    headers: {
+      Authorization: `Bearer ${await getAuthToken()}`,
+    },
+  });
+  return response.data;
+};
+
+const verifyOtp = async ({ email, otp }) => {
+  const endpoint = `/register/verify/email/1`;
+
+  const params = { email };
+  const body = { otp };
+
+  const response = await api.post(endpoint, body, {
+    params,
+    headers: {
+      Authorization: `Bearer ${await getAuthToken()}`,
+    },
+  });
+  return response.data;
+};
+
+export const useSendOtp = () => {
+  console.log("useSendOtp");
+  return useMutation({
+    mutationFn: sendOtp,
+    onSuccess: (data) => {
+      if (data.Access && data.Sent) {
+        console.log("OTP sent successfully");
+      } else {
+        console.error("Failed to send OTP:", data.Error);
+      }
+    },
+    onError: (error) => {
+      console.error("Error sending OTP:", error.response?.data || error);
+    },
+  });
+};
+
+export const useVerifyOtp = () => {
+  console.log("useVerifyOtp");
+  return useMutation({
+    mutationFn: verifyOtp,
+    onSuccess: (data) => {
+      if (data.Access && data.Verified) {
+        // Handle successful verification
+        console.log("Email verified successfully");
+      } else {
+        // Handle verification failure
+        console.error("Email verification failed:", data.Error);
+      }
+    },
+    onError: (error) => {
+      console.error("Error verifying OTP:", error.response?.data || error);
+    },
+  });
+};
+
+const login = async (email, password) => {
+  const response = await api.post("/login", { email, password });
+  return response.data;
+};
+
+export function useLogin() {
+  const queryClient = useQueryClient();
   const router = useRouter();
 
   return useMutation({
-    mutationFn: (userData) =>
-      axios.post(`${EXPO_PUBLIC_API_ENDPOINT}/register/1`, userData),
-    onSuccess: (response) => {
-      console.log("Signup successful:", response.data);
-      setUser(response.data.user);
-      router.push("auth/verifyOtp");
+    mutationFn: ({ email, password }) => login(email, password),
+    onSuccess: async (data) => {
+      if (data.Access) {
+        // Save the entire user data in the cache
+        queryClient.setQueryData(["user"], data.Data);
+
+        try {
+          // Save the auth token in AsyncStorage
+          await AsyncStorage.setItem("authToken", data.Data.Auth || "");
+
+          // Invalidate and refetch user data
+          queryClient.invalidateQueries(["user"]);
+
+          // Navigate to the dashboard or home screen
+          router.replace("/dashboard");
+        } catch (error) {
+          console.error("Error saving login information:", error);
+          Alert.alert(
+            "Login Error",
+            "Failed to save login information. Please try again."
+          );
+        }
+      } else {
+        Alert.alert(
+          "Login Failed",
+          data.Error || "An unknown error occurred. Please try again."
+        );
+      }
     },
     onError: (error) => {
-      console.error("Signup error:", error);
+      console.error("Login error:", error.response?.data || error);
       Alert.alert(
-        "Error",
-        error.response?.data?.message || "An error occurred during signup"
+        "Login Failed",
+        "Please check your credentials and try again."
       );
     },
   });
