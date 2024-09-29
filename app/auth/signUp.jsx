@@ -20,8 +20,9 @@ import { useRouter } from "expo-router";
 import ProgressBar from "./components/ProgressBar";
 import CountrySelector from "./components/CountrySelector";
 import useUserStore from "../../store/userStore";
-import axios from "axios"; // Make sure to install axios: npm install axios
-import { EXPO_PUBLIC_API_ENDPOINT } from '@env';
+import axios from "axios";
+
+const { EXPO_PUBLIC_API_ENDPOINT } = process.env;
 
 const SignUp = () => {
   const [firstName, setFirstName] = useState("");
