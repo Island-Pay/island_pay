@@ -6,14 +6,14 @@ https://expo.dev/artifacts/eas/cpUMsRndYhy7juDVn1cxiP.aab
 
 You can create an account or use this credentials:
 
-email:soluwizy@gmail.com
-password: Test123$$
+email:soluwizy@gmail.com,
+password: Test123$$,
 Pin(for transactions): 1234
 
 or
 
-email: elpraise20@gmail.com
-Password: Hologram44*
+email: elpraise20@gmail.com,
+Password: Hologram44*,
 Pin(for transactions): 1234
 
 This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
