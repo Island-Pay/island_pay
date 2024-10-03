@@ -21,7 +21,12 @@ import Animated, {
   withSpring,
   runOnJS,
 } from "react-native-reanimated";
-import { useGetWalletDetails } from "../apiCall/apiCall";
+import {
+  getUserDetails,
+  useGetUserDetails,
+  useGetWalletDetails,
+} from "../apiCall/apiCall";
+import { useQuery } from "@tanstack/react-query";
 
 const MODAL_HEIGHT = 400;
 
@@ -30,8 +35,9 @@ const DashboardScreen = () => {
   const [isBalanceVisible, setIsBalanceVisible] = useState(true);
   const [isModalVisible, setIsModalVisible] = useState(false);
 
-  const { data, error, isLoading, refetch } = useGetWalletDetails();
-
+  const { data, error, isLoading } = useGetWalletDetails();
+  const { refetch: detailsRefetch, data: detailsData } = useGetUserDetails();
+  const { data: dtus } = useQuery({ queryKey: ["user"] });
   const [accounts, setAccounts] = useState([]);
   const [selectedAccount, setSelectedAccount] = useState(null);
 
@@ -90,7 +96,17 @@ const DashboardScreen = () => {
       setAccounts(newAccounts);
       setSelectedAccount(newAccounts[0]); // Set the first account as default
     }
+
+    console.log(dtus);
   }, [data]);
+
+  useEffect(() => {
+    if (detailsData) {
+      console.log("User details:", detailsData);
+    } else {
+      detailsRefetch();
+    }
+  }, [detailsData]);
 
   const modalY = useSharedValue(MODAL_HEIGHT);
 
@@ -151,10 +167,9 @@ const DashboardScreen = () => {
           <>
             <View style={styles.profileContainer}>
               <TouchableOpacity style={styles.profileCircle}>
-                <Image
-                  source={{ uri: "https://via.placeholder.com/40" }}
-                  style={styles.profileImage}
-                />
+                <Text style={styles.profileImage}>
+                  {dtus?.UserDetails?.User?.firstName.slice(0, 2)}
+                </Text>
               </TouchableOpacity>
             </View>
 
@@ -367,10 +382,19 @@ const styles = StyleSheet.create({
     height: wp(10),
     borderRadius: wp(5),
     overflow: "hidden",
+    backgroundColor: theme.colors.purple,
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    borderColor: theme.colors.grey_deep_2,
+    borderWidth: 2,
   },
   profileImage: {
-    width: "100%",
-    height: "100%",
+    color: "white",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    fontSize: 18,
   },
   accountContainer: {
     padding: wp(5),

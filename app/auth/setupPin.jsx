@@ -15,7 +15,7 @@ import { hp, wp } from "../../helpers/common";
 import Animated, { FadeIn, FadeInUp } from "react-native-reanimated";
 import { useRouter } from "expo-router";
 import MaterialCommunityIcons from "@expo/vector-icons/MaterialCommunityIcons";
-import { useRegisterPin } from "../apiCall/apiCall"; // Adjust the import path as necessary
+import { useRegisterPin, useGetUserDetails } from "../apiCall/apiCall"; // Adjust the import path as necessary
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const SetupPin = () => {
@@ -93,6 +93,7 @@ const SetupPin = () => {
                 onSuccess: () => {
                   setLoading(false);
                   router.push("dashboard/home");
+                  useGetUserDetails().refetch();
                 },
                 onError: () => {
                   setLoading(false);

@@ -60,6 +60,7 @@ const SendThroughIsland = () => {
     setConvertLoading(true);
 
     try {
+      console.log("me the receiver:", receiver);
       await sendMoneyMutation.mutateAsync({
         currency: selectedCurrency.code,
         amount: parseFloat(amount),

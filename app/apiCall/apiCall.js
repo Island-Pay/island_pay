@@ -71,11 +71,12 @@ const convertMoney = async ({ from, to, pin, amount }) => {
 };
 
 const sendMoney = async ({ currency, amount, receiver, pin }) => {
+  console.log(currency, amount, pin, receiver);
   const response = await api.post(
     `/sendmoney`,
     JSON.stringify({
       amount,
-      receiver,
+      receiver: String(receiver),
       pin,
     }),
     {
@@ -122,6 +123,16 @@ const registerPin = async ({ email, pin }) => {
       },
     }
   );
+  return response.data;
+};
+
+export const getUserDetails = async () => {
+  const response = await api.get(`/user/details`, {
+    headers: {
+      Authorization: `Bearer ${await getAuthToken()}`,
+    },
+  });
+  console.log("hola", response);
   return response.data;
 };
 
@@ -360,25 +371,25 @@ export const useSendMoney = () => {
     },
   });
 };
-export const getBanks = async (country) => {
-  const response = await api.get(`/payout/get-banks`, {
-    params: { country },
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data.Banks;
-};
+// export const getBanks = async (country) => {
+//   const response = await api.get(`/payout/get-banks`, {
+//     params: { country },
+//     headers: {
+//       Authorization: `Bearer ${token}`,
+//     },
+//   });
+//   return response.data.Banks;
+// };
 
-export const getMobileMoney = async (country) => {
-  const response = await api.get(`/payout/get-mobileMoney`, {
-    params: { country },
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data.Banks;
-};
+// export const getMobileMoney = async (country) => {
+//   const response = await api.get(`/payout/get-mobileMoney`, {
+//     params: { country },
+//     headers: {
+//       Authorization: `Bearer ${token}`,
+//     },
+//   });
+//   return response.data.Banks;
+// };
 
 export const useRegisterPin = () => {
   return useMutation({
@@ -394,4 +405,109 @@ export const useRegisterPin = () => {
       console.error("Error registering pin:", error.response?.data || error);
     },
   });
+};
+
+export const useGetUserDetails = () => {
+  return useQuery({
+    queryKey: ["getUserDetails"],
+    queryFn: getUserDetails,
+
+    onError: (error) => {
+      console.error("Error fetching user details:", error);
+    },
+  });
+};
+
+export const getBanks = async (country) => {
+  const response = await api.get(`/payout/get-banks`, {
+    params: { country },
+    headers: {
+      Authorization: `Bearer ${await getAuthToken()}`,
+    },
+  });
+  return response.data.Banks;
+};
+
+export const getMobileMoney = async (country) => {
+  const response = await api.get(`/payout/get-mobileMoney`, {
+    params: { country },
+    headers: {
+      Authorization: `Bearer ${await getAuthToken()}`,
+    },
+  });
+  return response.data.Banks;
+};
+
+export const resolveBank = async (country, bank, account) => {
+  const response = await api.post(
+    `/payout/resolve-bank`,
+    { bank, account },
+    {
+      params: { country },
+      headers: {
+        Authorization: `Bearer ${await getAuthToken()}`,
+      },
+    }
+  );
+  // console.log(response.data);
+  return response.data;
+};
+
+export const resolveMobileMoney = async (
+  country,
+  mobileMoneyCode,
+  phoneNumber
+) => {
+  const response = await api.post(
+    `/payout/resolve-mobileMoney`,
+    { mobileMoneyCode, phoneNumber },
+    {
+      params: { country },
+      headers: {
+        Authorization: `Bearer ${await getAuthToken()}`,
+      },
+    }
+  );
+  return response.data.Banks;
+};
+
+export const disburseToBank = async ({
+  bankCode,
+  account,
+  pin,
+  amount,
+  currency,
+  narration,
+  accountName,
+}) => {
+  const response = await api.post(
+    `/payout/bank/disburse`,
+    { bankCode, account, pin, amount, currency, narration, accountName },
+    {
+      headers: {
+        Authorization: `Bearer ${await getAuthToken()}`,
+      },
+    }
+  );
+  return response.data;
+};
+
+export const disburseToMobileMoney = async ({
+  mobileMoneySlug,
+  account,
+  pin,
+  amount,
+  currency,
+  narration,
+}) => {
+  const response = await api.post(
+    `/payout/mobilemoney/disburse`,
+    { mobileMoneySlug, account, pin, amount, currency, narration },
+    {
+      headers: {
+        Authorization: `Bearer ${await getAuthToken()}`,
+      },
+    }
+  );
+  return response.data;
 };
